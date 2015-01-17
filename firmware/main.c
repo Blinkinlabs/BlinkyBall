@@ -35,7 +35,9 @@
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include <util/delay.h>
+#include "ekg_data.h"
 
 // Define pins
 
@@ -82,7 +84,7 @@ void flash() {
 
 void sleep()
 {
-    GIMSK |= _BV(INT0); // Enable INT0
+    bitSet(GIMSK, INT0);    // Enable INT0
     MCUCR &= ~(_BV(ISC01) | _BV(ISC00));      //INT0 on low level
 
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
@@ -92,7 +94,7 @@ void sleep()
     sleep_cpu(); // SLEEP
   
     cli(); // Disable interrupts
-    GIMSK = 0x0; // Disable INT0 (TODO: Macro for this!)
+    bitClear(GIMSK, INT0);      // Disable INT0
     sleep_disable(); // Clear SE bit
   
     sei(); // Enable interrupts
@@ -129,7 +131,6 @@ int main(void) {
     OCR0A = 0;
     OCR0B = 0;
     
-    
 
     // main loop - cycle for 5 seconds, then sleep
     for(;;){
@@ -140,13 +141,15 @@ int main(void) {
         // TODO: Configure unused pins as pullups
         PORTB = 0;
 
-        // Do a quick flash routine
-        uint8_t i;
-        for(i = 0; i < 30; i++) {
-            setLEDs(i);
+        setLEDs(1);
 
-            // make a long delay
-            long_delay_ms(50);
+        // Do a quick flash routine
+        int i;
+        for(i = 0; i < EKG_DATA_LENGTH; i++) {
+            setLEDs(pgm_read_byte(&ekgData[i]));
+
+            // make a delay
+            _delay_ms(10);
         }
 
         DDRB = 0;
