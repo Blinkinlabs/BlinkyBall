@@ -112,6 +112,23 @@ void setLEDs(uint8_t value) {
     OCR0B = value;
 }
 
+void playEKG() {
+    int i;
+
+    for(i = 0; i < EKG_DATA_LENGTH; i++) {
+        setLEDs(pgm_read_byte(&ekgData[i]));
+
+        // make a delay
+        _delay_ms(10);
+    }
+}
+
+void solidOn() {
+    int i;
+    setLEDs(255);
+    long_delay_ms(4000);
+}
+
 // program entry point
 int main(void) {
 
@@ -141,19 +158,16 @@ int main(void) {
         // TODO: Configure unused pins as pullups
         PORTB = 0;
 
-        setLEDs(1);
+        //playEKG();
+        solidOn();
 
-        // Do a quick flash routine
-        int i;
-        for(i = 0; i < EKG_DATA_LENGTH; i++) {
-            setLEDs(pgm_read_byte(&ekgData[i]));
+        // Clear the transistors before disabling the ports
+        // TODO: Prevent drift on portb from enabling the transistor??
+        setLEDs(0);
+        _delay_ms(1);
 
-            // make a delay
-            _delay_ms(10);
-        }
-
-        DDRB = 0;
         PORTB = 0;
+        DDRB = 0;
 
         // Go back to sleep
         // TODO: Don't sleep if bouncing is still going on
