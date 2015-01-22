@@ -6,16 +6,16 @@
 DEVICE     = attiny85           # See avr-help for all possible devices
 CLOCK      = 1000000            # 1Mhz
 PROGRAMMER = -v -v -c usbtiny -P usb -B 20 # For using Adafruit USBtiny
-OBJECTS    = main.o             # Add more objects for each .c file here
+OBJECTS    = main.o # Add more objects for each .cpp file here
 FUSES      = -U lfuse:w:0x62:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m  # settings as taken from http://www.engbedded.com/fusecalc/
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
-COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
+COMPILE = avr-g++ -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 
 # symbolic targets:
 all:	main.hex
 
-.c.o:
+.cpp.o:
 	$(COMPILE) -c $< -o $@
 
 .S.o:
@@ -53,6 +53,3 @@ main.hex: main.elf
 # Targets for code debugging and analysis:
 disasm:	main.elf
 	avr-objdump -d main.elf
-
-cpp:
-	$(COMPILE) -E main.c

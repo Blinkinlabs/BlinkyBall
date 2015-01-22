@@ -13,20 +13,22 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 #include "ekg_data.h"
+//#include "irremote.h"
 
 // Define pins
 
-#define PIN_LED_TOP  PB1
-#define PIN_LED_BOT  PB0
+#define PIN_LED_ON   PB1
 
 #define PIN_WAKEUP   PB2
-#define PIN_IR_DATA  PB4
+#define PIN_IR_POWER PB4
+#define PIN_IR_DATA  PB3
 
 
 // System parameters
 
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
-#define DEBOUNCE_COUNT 20
+//#define DEBOUNCE_COUNT 20
+#define DEBOUNCE_COUNT 2
 
 // Number of heartbeats played during each on-time
 #define HEARTBEAT_REPS 6
@@ -68,8 +70,8 @@ ISR(INT0_vect) {
 }
 
 void setLEDs(uint8_t value) {
-    OCR0A = value;
-    OCR0B = value;
+//    OCR0B = value;
+    OCR1A = value;
 }
 
 void playEKG() {
@@ -102,41 +104,47 @@ int main(void) {
 
     // Disable clicks to peripherals that we aren't using
     // (This saves power in run mode)
-    PRR |= _BV(PRTIM1) | _BV(PRUSI) | _BV(PRADC);
+    PRR |= _BV(PRUSI) | _BV(PRADC);
 
     MCUCR &= ~(_BV(ISC01) | _BV(ISC00));      //INT0 on low level // TODO: This is the default?
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
 
-    // Set up Timer0 to do PWM output to the LEDs (OC0A, OC0B)
-    // Use phase correct PWM mode
-    TCCR0A = _BV(COM0A1) | _BV(COM0B1) | _BV(WGM00);
-    TCCR0B = _BV(CS00);
+    // Set up timer1 to do PWM output to the LEDs (OC1A)
+    
+    OCR1C = 0xFF;
+    TCCR1 = _BV(PWM1A) | _BV(COM1A0) | _BV(CS10);
+
+//    // Set up Timer0 to do PWM output to the LEDs (OC0A, OC0B)
+//    // Use phase correct PWM mode
+//    TCCR0A = _BV(COM0A1) | _BV(COM0B1) | _BV(WGM00);
+//    TCCR0B = _BV(CS00);
 
     // Main loop- enable the LED outputs, run the pattern, then disable the outputs and sleep.
     for(;;){
-        // Turn off the LED outputs before disabling the pins
-        setLEDs(0);
-        _delay_ms(1);
+//        // Turn off the LED outputs before disabling the pins
+//        setLEDs(0);
+//        _delay_ms(1);
+//
+//        // Set all I/O pins to input, and disable pull-up resistors
+//        // TODO: Enable pullups for unused I/O
+//        PORTB = 0;
+//        DDRB = 0;
+//
+//        // Go to sleep
+//        sleep();
+//
+//        // Do a quick debounce check, to discard small shakes
+//        if(interrupt_count > DEBOUNCE_COUNT) {
 
-        // Set all I/O pins to input, and disable pull-up resistors
-        // TODO: Enable pullups for unused I/O
-        PORTB = 0;
-        DDRB = 0;
-
-        // Go to sleep
-        sleep();
-
-        // Do a quick debounce check, to discard small shakes
-        if(interrupt_count > DEBOUNCE_COUNT) {
-
-            // Set the LED pins as outputs
-            DDRB |= _BV(PIN_LED_TOP) | _BV(PIN_LED_BOT);
-            PORTB = 0;
+            // Set the LED pin as a output, and enable the IR receiver
+            DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
+            PORTB = _BV(PIN_IR_POWER);
+            //PORTB = 0;
 
             playEKG();
             //solidOn();
 
-        }
+//        }
     }
     
     return 0;   /* never reached */
