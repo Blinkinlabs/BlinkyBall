@@ -369,8 +369,8 @@ http://item.taobao.com/item.htm?spm=a230r.1.14.130.LurJbZ&amp;id=16889806763&amp
 <wire x1="-3" y1="-2.5" x2="-3" y2="1.5" width="0.127" layer="21"/>
 <wire x1="2" y1="-2.5" x2="-2" y2="-2.5" width="0.127" layer="21" curve="-153.434949"/>
 <pad name="P$2" x="0" y="0" drill="0.8" diameter="1.4"/>
-<pad name="P$3" x="2" y="0" drill="0.8" diameter="1.4"/>
-<pad name="P$1" x="-2" y="0" drill="0.8" diameter="1.4"/>
+<pad name="P$3" x="2.54" y="0" drill="0.8" diameter="1.4"/>
+<pad name="P$1" x="-2.54" y="0" drill="0.8" diameter="1.4"/>
 </package>
 <package name="TO252">
 <smd name="P$1" x="-2.285" y="-3.35" dx="2.3" dy="1.4" layer="1" rot="R90"/>
@@ -6240,7 +6240,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 <instance part="SUPPLY5" gate="G$1" x="93.98" y="45.72"/>
 <instance part="R1" gate="G$1" x="78.74" y="0" rot="R90"/>
 <instance part="GND4" gate="1" x="99.06" y="73.66"/>
-<instance part="U$3" gate="G$1" x="111.76" y="91.44"/>
+<instance part="U$3" gate="G$1" x="99.06" y="91.44" rot="MR0"/>
 </instances>
 <busses>
 </busses>
@@ -6311,10 +6311,10 @@ We've spent an enormous amount of time creating and checking these footprints an
 <junction x="93.98" y="-7.62"/>
 </segment>
 <segment>
-<pinref part="U$3" gate="G$1" pin="P$2"/>
 <pinref part="GND3" gate="1" pin="GND"/>
-<wire x1="114.3" y1="91.44" x2="116.84" y2="91.44" width="0.1524" layer="91"/>
 <wire x1="116.84" y1="91.44" x2="116.84" y2="88.9" width="0.1524" layer="91"/>
+<pinref part="U$3" gate="G$1" pin="P$1"/>
+<wire x1="111.76" y1="91.44" x2="116.84" y2="91.44" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="U$5" gate="G$1" pin="VS"/>
@@ -6337,8 +6337,8 @@ We've spent an enormous amount of time creating and checking these footprints an
 <pinref part="TP3" gate="G$1" pin="1"/>
 <wire x1="53.34" y1="83.82" x2="53.34" y2="71.12" width="0.1524" layer="91"/>
 <junction x="53.34" y="71.12"/>
-<pinref part="U$3" gate="G$1" pin="P$1"/>
-<wire x1="99.06" y1="91.44" x2="93.98" y2="91.44" width="0.1524" layer="91"/>
+<pinref part="U$3" gate="G$1" pin="P$2"/>
+<wire x1="96.52" y1="91.44" x2="93.98" y2="91.44" width="0.1524" layer="91"/>
 <junction x="93.98" y="91.44"/>
 </segment>
 </net>
