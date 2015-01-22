@@ -28,6 +28,8 @@
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
 #define DEBOUNCE_COUNT 20
 
+// Number of heartbeats played during each on-time
+#define HEARTBEAT_REPS 6
 
 #define bitSet(reg, bit) reg |= (1<<bit)
 #define bitClear(reg, bit) reg &= ~(1<<bit)
@@ -71,18 +73,20 @@ void setLEDs(uint8_t value) {
 }
 
 void playEKG() {
-    int i;
+    int count;
+    int position;
 
-    for(i = 0; i < EKG_DATA_LENGTH; i++) {
-        setLEDs(pgm_read_byte(&ekgData[i]));
+    for(count = 0; count < HEARTBEAT_REPS; count++) {
+        for(position = 0; position < EKG_DATA_LENGTH; position++) {
+            setLEDs(pgm_read_byte(&ekgData[position]));
 
-        // make a delay
-        _delay_ms(10);
+            // make a delay
+            _delay_ms(2);
+        }
     }
 }
 
 void solidOn() {
-    int i;
     setLEDs(255);
     long_delay_ms(1000);
 }
@@ -129,8 +133,8 @@ int main(void) {
             DDRB |= _BV(PIN_LED_TOP) | _BV(PIN_LED_BOT);
             PORTB = 0;
 
-            //playEKG();
-            solidOn();
+            playEKG();
+            //solidOn();
 
         }
     }
