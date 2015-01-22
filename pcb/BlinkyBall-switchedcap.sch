@@ -6170,7 +6170,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 </classes>
 <parts>
 <part name="U1" library="SparkFun-DigitalIC" deviceset="ATTINY45" device="TINY85-20-SMT" value="Tiny85-20-SMT"/>
-<part name="U$2" library="blinkinlabs" deviceset="BATTERY_BUTTON_CELL" device="AG3" value="BATTERY_BUTTON_CELLAG3"/>
+<part name="U$1" library="blinkinlabs" deviceset="BATTERY_BUTTON_CELL" device="AG3" value="BATTERY_BUTTON_CELLAG3"/>
 <part name="SUPPLY1" library="SparkFun-Aesthetics" deviceset="V_BATT" device=""/>
 <part name="GND1" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="SUPPLY2" library="SparkFun-Aesthetics" deviceset="V_BATT" device=""/>
@@ -6188,17 +6188,17 @@ We've spent an enormous amount of time creating and checking these footprints an
 <part name="TP4" library="SparkFun-Passives" deviceset="TEST-POINT" device="3X5"/>
 <part name="TP5" library="SparkFun-Passives" deviceset="TEST-POINT" device="3X5"/>
 <part name="TP6" library="SparkFun-Passives" deviceset="TEST-POINT" device="3X5"/>
-<part name="LED_BOT" library="adafruit" deviceset="LED" device="5MM"/>
-<part name="LED_TOP" library="adafruit" deviceset="LED" device="5MM"/>
+<part name="D1" library="adafruit" deviceset="LED" device="5MM"/>
+<part name="D2" library="adafruit" deviceset="LED" device="5MM"/>
 <part name="GND5" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="SUPPLY5" library="SparkFun-Aesthetics" deviceset="V_BATT" device=""/>
 <part name="R1" library="adafruit" deviceset="R-US_" device="R0603" value="10k"/>
 <part name="GND4" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="U$3" library="blinkinlabs" deviceset="SW-18015P" device=""/>
 <part name="U$4" library="blinkinlabs" deviceset="REG71050" device=""/>
-<part name="C2" library="adafruit" deviceset="C-US" device="C0603" value="100nF"/>
-<part name="C3" library="adafruit" deviceset="C-US" device="C0603" value="100nF"/>
-<part name="C4" library="adafruit" deviceset="C-US" device="C0603" value="100nF"/>
+<part name="C2" library="adafruit" deviceset="C-US" device="C0603" value="2.2uF"/>
+<part name="C3" library="adafruit" deviceset="C-US" device="C0603" value="2.2uF"/>
+<part name="C4" library="adafruit" deviceset="C-US" device="C0603" value="2.2uF"/>
 </parts>
 <sheets>
 <sheet>
@@ -6206,7 +6206,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 </plain>
 <instances>
 <instance part="U1" gate="G$1" x="30.48" y="68.58"/>
-<instance part="U$2" gate="G$1" x="-33.02" y="68.58"/>
+<instance part="U$1" gate="G$1" x="-33.02" y="68.58"/>
 <instance part="SUPPLY1" gate="G$1" x="-33.02" y="83.82"/>
 <instance part="GND1" gate="1" x="-33.02" y="53.34"/>
 <instance part="SUPPLY2" gate="G$1" x="7.62" y="81.28"/>
@@ -6224,8 +6224,8 @@ We've spent an enormous amount of time creating and checking these footprints an
 <instance part="TP4" gate="G$1" x="2.54" y="76.2" rot="R180"/>
 <instance part="TP5" gate="G$1" x="2.54" y="63.5" rot="R180"/>
 <instance part="TP6" gate="G$1" x="45.72" y="83.82" rot="R90"/>
-<instance part="LED_BOT" gate="G$1" x="154.94" y="10.16"/>
-<instance part="LED_TOP" gate="G$1" x="160.02" y="10.16"/>
+<instance part="D1" gate="G$1" x="154.94" y="10.16"/>
+<instance part="D2" gate="G$1" x="160.02" y="10.16"/>
 <instance part="GND5" gate="1" x="83.82" y="-5.08"/>
 <instance part="SUPPLY5" gate="G$1" x="99.06" y="33.02"/>
 <instance part="R1" gate="G$1" x="83.82" y="15.24" rot="R90"/>
@@ -6242,7 +6242,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 <net name="V_BATT" class="0">
 <segment>
 <pinref part="SUPPLY1" gate="G$1" pin="V_BATT"/>
-<pinref part="U$2" gate="G$1" pin="+"/>
+<pinref part="U$1" gate="G$1" pin="+"/>
 <wire x1="-33.02" y1="83.82" x2="-33.02" y2="78.74" width="0.1524" layer="91"/>
 </segment>
 <segment>
@@ -6275,7 +6275,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 </net>
 <net name="GND" class="0">
 <segment>
-<pinref part="U$2" gate="G$1" pin="-"/>
+<pinref part="U$1" gate="G$1" pin="-"/>
 <wire x1="-33.02" y1="60.96" x2="-33.02" y2="55.88" width="0.1524" layer="91"/>
 <pinref part="GND1" gate="1" pin="GND"/>
 </segment>
@@ -6312,10 +6312,10 @@ We've spent an enormous amount of time creating and checking these footprints an
 <wire x1="99.06" y1="2.54" x2="83.82" y2="2.54" width="0.1524" layer="91"/>
 <junction x="99.06" y="2.54"/>
 <junction x="83.82" y="2.54"/>
-<pinref part="LED_BOT" gate="G$1" pin="C"/>
+<pinref part="D1" gate="G$1" pin="C"/>
 <wire x1="154.94" y1="5.08" x2="154.94" y2="2.54" width="0.1524" layer="91"/>
 <wire x1="154.94" y1="2.54" x2="160.02" y2="2.54" width="0.1524" layer="91"/>
-<pinref part="LED_TOP" gate="G$1" pin="C"/>
+<pinref part="D2" gate="G$1" pin="C"/>
 <wire x1="160.02" y1="2.54" x2="160.02" y2="5.08" width="0.1524" layer="91"/>
 <junction x="154.94" y="2.54"/>
 </segment>
@@ -6439,14 +6439,14 @@ We've spent an enormous amount of time creating and checking these footprints an
 <net name="N$1" class="0">
 <segment>
 <pinref part="R3" gate="G$1" pin="1"/>
-<pinref part="LED_TOP" gate="G$1" pin="A"/>
+<pinref part="D2" gate="G$1" pin="A"/>
 <wire x1="160.02" y1="15.24" x2="160.02" y2="12.7" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$2" class="0">
 <segment>
 <pinref part="R2" gate="G$1" pin="1"/>
-<pinref part="LED_BOT" gate="G$1" pin="A"/>
+<pinref part="D1" gate="G$1" pin="A"/>
 <wire x1="154.94" y1="15.24" x2="154.94" y2="12.7" width="0.1524" layer="91"/>
 </segment>
 </net>
