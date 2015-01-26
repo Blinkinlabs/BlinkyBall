@@ -1,55 +1,60 @@
 #
-# Makefile template for ATtiny45
+# Makefile template for ATtiny85
 # Derived from AVR Crosspack template
 #
 
 DEVICE     = attiny85           # See avr-help for all possible devices
-CLOCK      = 1000000            # 1Mhz
-PROGRAMMER = -v -v -c usbtiny -P usb -B 20 # For using Adafruit USBtiny
-OBJECTS    = main.o # Add more objects for each .cpp file here
+CLOCK      = 8000000            # 8Mhz
+PROGRAMMER = -c usbtiny -P usb -B 3 # For using Adafruit USBtiny
 FUSES      = -U lfuse:w:0x62:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m  # settings as taken from http://www.engbedded.com/fusecalc/
 
+TARGET = blinkyball
+
+CC = avr-gcc
+CXX = avr-g++
+
+
+CPPFLAGS = -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
+CXXFLAGS = 
+CFLAGS = 
+
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
-COMPILE = avr-g++ -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
+
+CPP_FILES = \
+	main.cpp \
+	irremote.cpp
+
+OBJECTS := $(CPP_FILES:.cpp=.o)
 
 # symbolic targets:
-all:	main.hex
-
-.cpp.o:
-	$(COMPILE) -c $< -o $@
-
-.S.o:
-	$(COMPILE) -x assembler-with-cpp -c $< -o $@
-
-.c.s:
-	$(COMPILE) -S $< -o $@
+all:	$(TARGET).hex
 
 flash:	all
-	$(AVRDUDE) -U flash:w:main.hex:i
+	$(AVRDUDE) -U flash:w:$(TARGET).hex:i
 
 fuse:
 	$(AVRDUDE) $(FUSES)
 
-install: flash fuse
+install: fuse flash
 
 # if you use a bootloader, change the command below appropriately:
 load: all
-	bootloadHID main.hex
+	bootloadHID $(TARGET).hex
 
 clean:
-	rm -f main.hex main.elf $(OBJECTS)
+	rm -f $(TARGET).hex $(TARGET).elf $(OBJECTS)
 
 # file targets:
-main.elf: $(OBJECTS)
-	$(COMPILE) -o main.elf $(OBJECTS)
+$(TARGET).elf: $(OBJECTS)
+	$(CXX) $(CPPFLAGS) -o $@ $(OBJECTS)
 
-main.hex: main.elf
-	rm -f main.hex
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
-	avr-size --format=avr --mcu=$(DEVICE) main.elf
+$(TARGET).hex: $(TARGET).elf
+	rm -f $(TARGET).hex
+	avr-objcopy -j .text -j .data -O ihex $(TARGET).elf $(TARGET).hex
+	avr-size --format=avr --mcu=$(DEVICE) $(TARGET).elf
 # If you have an EEPROM section, you must also create a hex file for the
 # EEPROM and add it to the "flash" target.
 
 # Targets for code debugging and analysis:
-disasm:	main.elf
-	avr-objdump -d main.elf
+disasm:	$(TARGET).elf
+	avr-objdump -d $(TARGET).elf
