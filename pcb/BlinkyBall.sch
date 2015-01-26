@@ -6342,7 +6342,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 <junction x="93.98" y="91.44"/>
 </segment>
 </net>
-<net name="LED_TOP" class="0">
+<net name="LED_ON" class="0">
 <segment>
 <pinref part="U1" gate="G$1" pin="PB1(MISO)"/>
 <wire x1="43.18" y1="73.66" x2="50.8" y2="73.66" width="0.1524" layer="91"/>
@@ -6367,7 +6367,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 <wire x1="48.26" y1="83.82" x2="48.26" y2="76.2" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="IR_ENABLE" class="0">
+<net name="IR_POWER" class="0">
 <segment>
 <label x="60.96" y="66.04" size="1.778" layer="95"/>
 <wire x1="111.76" y1="66.04" x2="43.18" y2="66.04" width="0.1524" layer="91"/>
@@ -6375,7 +6375,7 @@ We've spent an enormous amount of time creating and checking these footprints an
 <pinref part="U3" gate="G$1" pin="GND"/>
 </segment>
 </net>
-<net name="IR_SIGNAL" class="0">
+<net name="IR_DATA" class="0">
 <segment>
 <label x="60.96" y="68.58" size="1.778" layer="95"/>
 <pinref part="U1" gate="G$1" pin="PB3(ADC3)"/>

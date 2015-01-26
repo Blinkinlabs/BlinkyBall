@@ -17,17 +17,18 @@
 #include "irremote.h"
 
 // Define pins
-#define PIN_LED_ON   PB1
-#define PIN_WAKEUP   PB2
-#define PIN_IR_POWER PB4
-#define PIN_IR_DATA  PB3
+#define PIN_LED_ON      PB1     // LED control pin; pulled low externally
+#define PIN_WAKEUP      PB2     // Wakeup pin; pulled high externally
+#define PIN_IR_POWER    PB4     // IR Power supply
+#define PIN_IR_DATA     PB3     // IR Data input
+
+#define PIN_UNUSED      PB0     // Unused pin; should configure as pull-up
 
 
 // System parameters
-
 #define DEBOUNCE_COUNT_DEFAULT 15
 #define HEARTBEAT_REPS_DEFAULT 6
-#define HEARTBEAT_SPEED_DEFAULT 120
+#define HEARTBEAT_SPEED_DEFAULT 200
 
 // EEPROM data addresses
 const uint8_t MAGIC_HEADER_ADDRESS    = 0;
@@ -36,7 +37,7 @@ const uint8_t HEARTBEAT_REPS_ADDRESS  = 2;
 const uint8_t HEARTBEAT_SPEED_ADDRESS = 3;
 
 // Magic header to determine if the EEPROM was written properly
-const uint8_t MAGIC_HEADER_VALUE = 0xED;
+const uint8_t MAGIC_HEADER_VALUE = 0xDE;
 
 
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
@@ -54,6 +55,9 @@ volatile uint8_t heartbeatReps;
 // 100bpm: 120
 volatile uint8_t heartbeatSpeed;
 
+// Counter for interrupt-based debounce routine
+volatile uint8_t interruptCount;
+
 #define bitSet(reg, bit) reg |= (1<<bit)
 #define bitClear(reg, bit) reg &= ~(1<<bit)
 
@@ -63,14 +67,9 @@ void long_delay_ms(uint16_t ms) {
 }
 
 // IR Receiver 
-
 IRrecv irrecv(PIN_IR_DATA);
-
 decode_results results;
 
-
-// Counter for interrupt-based debounce routine
-volatile uint8_t interruptCount = 0;
 
 void sleep()
 {
@@ -100,24 +99,6 @@ void setLEDs(uint8_t value) {
     OCR1A = value;
 }
 
-void playEKG() {
-    int position;
-
-    for(position = 0; position < EKG_DATA_LENGTH; position++) {
-        setLEDs(pgm_read_byte(&ekgData[position]));
-
-        // make a delay
-        for(uint8_t count = 0; count < heartbeatSpeed; count++) {
-            _delay_us(9);  // Allow 1uS for loop setup
-        }
-    }
-}
-
-void solidOn() {
-    setLEDs(255);
-    long_delay_ms(1000);
-}
-
 // Store the configuration rates in EEPROM
 void saveRates() {
     eeprom_write_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS,   DEBOUNCE_COUNT_DEFAULT);
@@ -140,6 +121,19 @@ void loadRates() {
     debounceCount =  eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
     heartbeatReps =  eeprom_read_byte((uint8_t*)HEARTBEAT_REPS_ADDRESS);
     heartbeatSpeed = eeprom_read_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS);
+}
+
+void playEKG() {
+    int position;
+
+    for(position = 0; position < EKG_DATA_LENGTH; position++) {
+        setLEDs(pgm_read_byte(&ekgData[position]));
+
+        // make a delay
+        for(uint8_t count = 0; count < heartbeatSpeed; count++) {
+            _delay_us(9);  // Allow 1uS for loop setup
+        }
+    }
 }
 
 // program entry point
@@ -188,10 +182,9 @@ int main(void) {
         setLEDs(0);
         _delay_ms(1);
 
-        // Set all I/O pins to input, and disable pull-up resistors
-        // TODO: Enable pullups for unused I/O
-        PORTB = 0;
+        // Set all I/O pins to input, and pull-up resistors for floating pins
         DDRB = 0;
+        PORTB = _BV(PIN_UNUSED);
 
         // Go to sleep
         sleep();
@@ -202,21 +195,18 @@ int main(void) {
         }
 
         // Set the LED pin as a output, and enable the IR receiver
-        PORTB = _BV(PIN_IR_POWER);
         DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
+        PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
 
         // Turn on the IR Receiver
         irrecv.enableIRIn(); // Start the receiver
 
         // Play the EKG back, checking for an IR reception
-        uint8_t loopCount;
-        for(loopCount = 0; loopCount < heartbeatReps; loopCount++) {
+        for(uint8_t loopCount = 0; loopCount < heartbeatReps; loopCount++) {
             playEKG();
 
             if (irrecv.decode(&results)) {
-//            if(true) {
-                int i = 0;
-                for(i = 0; i < 50; i++) {
+                for(uint8_t i = 0; i < 50; i++) {
                     setLEDs(i%2==0?255:0);
                     _delay_ms(10);
                 }
