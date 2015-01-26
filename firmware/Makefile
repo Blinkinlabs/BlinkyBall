@@ -6,7 +6,7 @@
 DEVICE     = attiny85           # See avr-help for all possible devices
 CLOCK      = 8000000            # 8Mhz
 PROGRAMMER = -c usbtiny -P usb -B 3 # For using Adafruit USBtiny
-FUSES      = -U lfuse:w:0x62:m -U hfuse:w:0xdf:m -U efuse:w:0xff:m  # settings as taken from http://www.engbedded.com/fusecalc/
+FUSES      = -U lfuse:w:0x62:m -U hfuse:w:0xd7:m -U efuse:w:0xff:m  # settings as taken from http://www.engbedded.com/fusecalc/
 
 TARGET = blinkyball
 

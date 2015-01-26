@@ -12,6 +12,7 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
+#include <avr/eeprom.h>
 #include "ekg_data.h"
 #include "irremote.h"
 
@@ -27,6 +28,16 @@
 #define DEBOUNCE_COUNT_DEFAULT 15
 #define HEARTBEAT_REPS_DEFAULT 6
 #define HEARTBEAT_SPEED_DEFAULT 120
+
+// EEPROM data addresses
+const uint8_t MAGIC_HEADER_ADDRESS    = 0;
+const uint8_t DEBOUNCE_COUNT_ADDRESS  = 1;
+const uint8_t HEARTBEAT_REPS_ADDRESS  = 2;
+const uint8_t HEARTBEAT_SPEED_ADDRESS = 3;
+
+// Magic header to determine if the EEPROM was written properly
+const uint8_t MAGIC_HEADER_VALUE = 0xED;
+
 
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
 volatile uint8_t debounceCount;
@@ -107,6 +118,30 @@ void solidOn() {
     long_delay_ms(1000);
 }
 
+// Store the configuration rates in EEPROM
+void saveRates() {
+    eeprom_write_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS,   DEBOUNCE_COUNT_DEFAULT);
+    eeprom_write_byte((uint8_t*)HEARTBEAT_REPS_ADDRESS,   HEARTBEAT_REPS_DEFAULT);
+    eeprom_write_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS,  HEARTBEAT_SPEED_DEFAULT);
+    eeprom_write_byte((uint8_t*)MAGIC_HEADER_ADDRESS,     MAGIC_HEADER_VALUE);
+}
+
+// Load the configuration rates from EEPROM, or create from default if they weren't
+// already initialized
+void loadRates() {
+    // If the EEPROM wasn't initialized, do so now
+    if(eeprom_read_byte((uint8_t*)MAGIC_HEADER_ADDRESS) != MAGIC_HEADER_VALUE) {
+        debounceCount = DEBOUNCE_COUNT_DEFAULT;
+        heartbeatReps = HEARTBEAT_REPS_DEFAULT;
+        heartbeatSpeed = HEARTBEAT_SPEED_DEFAULT;
+        saveRates();
+    }
+
+    debounceCount =  eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
+    heartbeatReps =  eeprom_read_byte((uint8_t*)HEARTBEAT_REPS_ADDRESS);
+    heartbeatSpeed = eeprom_read_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS);
+}
+
 // program entry point
 // Kinda sad that the production devices will only run this once T_T
 int main(void) {
@@ -138,10 +173,8 @@ int main(void) {
     OCR1C = 0xFF;
     TCCR1 = _BV(PWM1A) | _BV(COM1A0) | _BV(CS10);
 
-    debounceCount = DEBOUNCE_COUNT_DEFAULT;
-    heartbeatReps = HEARTBEAT_REPS_DEFAULT;
-    heartbeatSpeed = HEARTBEAT_SPEED_DEFAULT;
 
+    loadRates();
 
     // Main loop. The first thing that we do is turn off peripherals that we don't need,
     // then we go to sleep. When woken up, run a quick debounce routine to determine if we
