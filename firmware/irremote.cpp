@@ -33,16 +33,13 @@
 #define HIGH 1
 #define LOW 0
 
-void pinMode(uint8_t pin, uint8_t mode) {
-}
-
-uint8_t digitalRead(uint8_t pin) {
-    if(PINB & _BV(PIN_IR_DATA))
-        return SPACE;
-
-    return MARK;
-}
 //// Arduino Shim //////
+
+//// Ugh. ///
+
+extern decode_results results;
+
+//// Ugh. ///
 
 volatile irparams_t irparams;
 
@@ -88,18 +85,18 @@ int MATCH_SPACE(int measured_ticks, int desired_us) {
   return measured_ticks >= TICKS_LOW(desired_us - MARK_EXCESS) && measured_ticks <= TICKS_HIGH(desired_us - MARK_EXCESS);
 }
 #else
-int MATCH(int measured, int desired) {return measured >= TICKS_LOW(desired) && measured <= TICKS_HIGH(desired);}
-int MATCH_MARK(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us + MARK_EXCESS));}
-int MATCH_SPACE(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us - MARK_EXCESS));}
+inline uint8_t MATCH(int measured, int desired) {return measured >= TICKS_LOW(desired) && measured <= TICKS_HIGH(desired);}
+inline uint8_t MATCH_MARK(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us + MARK_EXCESS));}
+inline uint8_t MATCH_SPACE(int measured_ticks, int desired_us) {return MATCH(measured_ticks, (desired_us - MARK_EXCESS));}
 // Debugging versions are in IRremote.cpp
 #endif
 
 
-IRrecv::IRrecv(int recvpin)
-{
-  irparams.recvpin = recvpin;
-  irparams.blinkflag = 0;
-}
+//IRrecv::IRrecv(int recvpin)
+//{
+//  irparams.recvpin = recvpin;
+//  irparams.blinkflag = 0;
+//}
 
 // initialization
 void IRrecv::enableIRIn() {
@@ -123,13 +120,14 @@ void IRrecv::enableIRIn() {
   irparams.timer = 0;
 
   // set pin modes
-  pinMode(irparams.recvpin, INPUT);
+  //pinMode(irparams.recvpin, INPUT);
 }
 
 void IRrecv::disableIRIn() {
     TIMER_DISABLE_INTR;
 }
 
+#if 0
 // enable/disable blinking of pin 13 on IR processing
 void IRrecv::blink13(int blinkflag)
 {
@@ -137,6 +135,7 @@ void IRrecv::blink13(int blinkflag)
   if (blinkflag)
     pinMode(BLINKLED, OUTPUT);
 }
+#endif
 
 // TIMER2 interrupt code to collect raw data.
 // Widths of alternating SPACE, MARK are recorded in rawbuf.
@@ -145,11 +144,13 @@ void IRrecv::blink13(int blinkflag)
 // First entry is the SPACE between transmissions.
 // As soon as a SPACE gets long, ready is set, state switches to IDLE, timing of SPACE continues.
 // As soon as first MARK arrives, gap width is recorded, ready is cleared, and new logging starts
+
+uint8_t irdata;
 ISR(TIMER_INTR_NAME)
 {
   TIMER_RESET;
 
-  uint8_t irdata = (uint8_t)digitalRead(irparams.recvpin);
+  irdata = ((PINB & _BV(PIN_IR_DATA))?SPACE:MARK);
 
   irparams.timer++; // One more 50us tick
   if (irparams.rawlen >= RAWBUF) {
@@ -202,6 +203,7 @@ ISR(TIMER_INTR_NAME)
     break;
   }
 
+#if 0
   if (irparams.blinkflag) {
     if (irdata == MARK) {
       BLINKLED_ON();  // turn pin 13 LED on
@@ -210,6 +212,7 @@ ISR(TIMER_INTR_NAME)
       BLINKLED_OFF();  // turn pin 13 LED off
     }
   }
+#endif
 }
 
 void IRrecv::resume() {
@@ -222,18 +225,21 @@ void IRrecv::resume() {
 // Decodes the received IR message
 // Returns 0 if no data ready, 1 if data ready.
 // Results of decoding are stored in results
-int IRrecv::decode(decode_results *results) {
-  results->rawbuf = irparams.rawbuf;
-  results->rawlen = irparams.rawlen;
+int IRrecv::decode() {
+  results.rawbuf = irparams.rawbuf;
+  results.rawlen = irparams.rawlen;
   if (irparams.rcvstate != STATE_STOP) {
     return ERR;
   }
 #ifdef DEBUG
   Serial.println("Attempting NEC decode");
 #endif
-  if (decodeNEC(results)) {
+  cli();
+  if (decodeNEC()) {
+    sei();
     return DECODED;
   }
+  sei();
 /*
 #ifdef DEBUG
   Serial.println("Attempting Sony decode");
@@ -302,70 +308,64 @@ int IRrecv::decode(decode_results *results) {
 }
 
 // NECs have a repeat only 4 items long
-long IRrecv::decodeNEC(decode_results *results) {
+long IRrecv::decodeNEC() {
   // TODO: Delete me?
-//  cli();
-//  pulseOut(0xA1);
-//  pulseOut(0xA2);
-//  pulseOut(irparams.rawlen);
-//
-//  for(uint8_t pos=0; pos < irparams.rawlen; pos++) {
-//    pulseOut(results->rawbuf[pos]);
-//  }
-//  sei();
-//
-//  cli();
-//  pulseOut(0xEE);
-//  pulseOut(0x00);
-//  pulseOut(irparams.rawlen);
-//  sei();
+  pulseOut(0xA1);
+  pulseOut(0xA2);
+  pulseOut(irparams.rawlen);
+
+  for(uint8_t pos=0; pos < irparams.rawlen; pos++) {
+    pulseOut(results.rawbuf[pos]);
+  }
 
   long data = 0;
   int offset = 1; // Skip first space
   // Initial mark
-  if (!MATCH_MARK(results->rawbuf[offset], NEC_HDR_MARK)) {
+  if (!MATCH_MARK(results.rawbuf[offset], NEC_HDR_MARK)) {
     return ERR;
   }
   offset++;
 
-//  cli();
-//  pulseOut(0xED);
-//  pulseOut(0x00);
-//  pulseOut(irparams.rawlen);
-//  pulseOut(irparams.rawlen == 4);
-//  pulseOut(MATCH_SPACE(results->rawbuf[offset], NEC_RPT_SPACE));
-//  pulseOut(MATCH_MARK(results->rawbuf[offset+1], NEC_BIT_MARK));
-//  sei();
-
   // Check for repeat
   if (irparams.rawlen == 4 &&
-    MATCH_SPACE(results->rawbuf[offset], NEC_RPT_SPACE) &&
-    MATCH_MARK(results->rawbuf[offset+1], NEC_BIT_MARK)) {
-    results->bits = 0;
-    results->value = REPEAT;
-    results->decode_type = NEC;
+    MATCH_SPACE(results.rawbuf[offset], NEC_RPT_SPACE) &&
+    MATCH_MARK(results.rawbuf[offset+1], NEC_BIT_MARK)) {
+    results.bits = 0;
+    results.value = REPEAT;
     return DECODED;
   }
+
+  pulseOut(0xEE);
+  pulseOut(0x00);
+  pulseOut(irparams.rawlen);
 
   if (irparams.rawlen < 2 * NEC_BITS + 4) {
     return ERR;
   }
 
+  pulseOut(0xEE);
+  pulseOut(0x01);
+  pulseOut(irparams.rawlen);
+
   // Initial space  
-  if (!MATCH_SPACE(results->rawbuf[offset], NEC_HDR_SPACE)) {
+  if (!MATCH_SPACE(results.rawbuf[offset], NEC_HDR_SPACE)) {
     return ERR;
   }
   offset++;
 
+  pulseOut(0xEE);
+  pulseOut(0x02);
+  pulseOut(irparams.rawlen);
+
   for (int i = 0; i < NEC_BITS; i++) {
-    if (!MATCH_MARK(results->rawbuf[offset], NEC_BIT_MARK)) {
+    if (!MATCH_MARK(results.rawbuf[offset], NEC_BIT_MARK)) {
       return ERR;
     }
     offset++;
-    if (MATCH_SPACE(results->rawbuf[offset], NEC_ONE_SPACE)) {
+    if (MATCH_SPACE(results.rawbuf[offset], NEC_ONE_SPACE)) {
       data = (data << 1) | 1;
     } 
-    else if (MATCH_SPACE(results->rawbuf[offset], NEC_ZERO_SPACE)) {
+    else if (MATCH_SPACE(results.rawbuf[offset], NEC_ZERO_SPACE)) {
       data <<= 1;
     } 
     else {
@@ -374,9 +374,8 @@ long IRrecv::decodeNEC(decode_results *results) {
     offset++;
   }
   // Success
-  results->bits = NEC_BITS;
-  results->value = data;
-  results->decode_type = NEC;
+  results.bits = NEC_BITS;
+  results.value = data;
   return DECODED;
 }
 

@@ -1,3 +1,4 @@
+// Note: don't make this > 255!
 //#define EKG_DATA_LENGTH 500
 #define EKG_DATA_LENGTH 220
 const uint8_t ekgData[EKG_DATA_LENGTH] PROGMEM = {

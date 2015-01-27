@@ -27,11 +27,10 @@
 // Results returned from the decoder
 class decode_results {
 public:
-  int decode_type; // NEC, SONY, RC5, UNKNOWN
-  union { // This is used for decoding Panasonic and Sharp data
-    unsigned int panasonicAddress;
-    unsigned int sharpAddress;
-  };
+//  union { // This is used for decoding Panasonic and Sharp data
+//    unsigned int panasonicAddress;
+//    unsigned int sharpAddress;
+//  };
   unsigned long value; // Decoded value
   int bits; // Number of bits in decoded value
   volatile unsigned int *rawbuf; // Raw intervals in .5 us ticks
@@ -60,16 +59,15 @@ public:
 class IRrecv
 {
 public:
-  IRrecv(int recvpin);
-  void blink13(int blinkflag);
-  int decode(decode_results *results);
+//  IRrecv(int recvpin);
+//  void blink13(int blinkflag);
+  int decode();
   void enableIRIn();
   void disableIRIn();
   void resume();
 private:
   // These are called by decode
-  int getRClevel(decode_results *results, int *offset, int *used, int t1);
-  long decodeNEC(decode_results *results);
+  long decodeNEC();
 #if 0
   long decodeSony(decode_results *results);
   long decodeSanyo(decode_results *results);
@@ -91,7 +89,7 @@ private:
 // Some useful constants
 
 #define USECPERTICK 50  // microseconds per clock interrupt tick
-#define RAWBUF 50 // Length of raw duration buffer
+#define RAWBUF 70 // Length of raw duration buffer
 
 // Marks tend to be 100us too long, and spaces 100us too short
 // when received due to sensor lag.

@@ -22,7 +22,8 @@ AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
 
 CPP_FILES = \
 	main.cpp \
-	irremote.cpp
+	irremote.cpp \
+        crc.cpp
 
 OBJECTS := $(CPP_FILES:.cpp=.o)
 

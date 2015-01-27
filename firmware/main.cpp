@@ -16,6 +16,7 @@
 #include "ekg_data.h"
 #include "irremote.h"
 #include "blinkyball.h"
+#include "crc.h"
 
 
 // System parameters
@@ -51,13 +52,8 @@ volatile uint8_t heartbeatSpeed;
 // Counter for interrupt-based debounce routine
 volatile uint8_t interruptCount;
 
-// long delay function
-void long_delay_ms(uint16_t ms) {
-    for(ms /= 10; ms>0; ms--) _delay_ms(10);
-}
-
 // IR Receiver 
-IRrecv irrecv(PIN_IR_DATA);
+IRrecv irrecv;
 decode_results results;
 
 
@@ -85,12 +81,12 @@ ISR(INT0_vect) {
     interruptCount++;
 }
 
-void setLEDs(uint8_t value) {
+inline void setLEDs(uint8_t value) {
     OCR1A = value;
 }
 
 // Store the configuration rates in EEPROM
-void saveRates() {
+inline void saveRates() {
     eeprom_write_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS,   DEBOUNCE_COUNT_DEFAULT);
     eeprom_write_byte((uint8_t*)HEARTBEAT_REPS_ADDRESS,   HEARTBEAT_REPS_DEFAULT);
     eeprom_write_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS,  HEARTBEAT_SPEED_DEFAULT);
@@ -99,7 +95,7 @@ void saveRates() {
 
 // Load the configuration rates from EEPROM, or create from default if they weren't
 // already initialized
-void loadRates() {
+inline void loadRates() {
     // If the EEPROM wasn't initialized, do so now
     if(eeprom_read_byte((uint8_t*)MAGIC_HEADER_ADDRESS) != MAGIC_HEADER_VALUE) {
         debounceCount = DEBOUNCE_COUNT_DEFAULT;
@@ -114,8 +110,9 @@ void loadRates() {
 }
 
 // Play back one loop of the heartbeat signal
-void playEKG() {
-    int position;
+inline void playEKG() {
+    uint8_t position = 0;
+    uint8_t count = 0;
 
     for(position = 0; position < EKG_DATA_LENGTH; position++) {
         setLEDs(pgm_read_byte(&ekgData[position]));
@@ -123,7 +120,7 @@ void playEKG() {
         // make a delay
         // Note that the system is heavily loaded by the IR sensor,
         // so this number has to be tuned.
-        for(uint8_t count = 0; count < heartbeatSpeed; count++) {
+        for(count = 0; count < heartbeatSpeed; count++) {
             _delay_us(8);  // Allow 1uS for loop setup
         }
     }
@@ -131,7 +128,7 @@ void playEKG() {
 
 // Meausre the battery voltage under load
 // @return Battery voltage, in counts (255=5V, 127=2.5V, etc)
-uint8_t measureBattery() {
+inline uint8_t measureBattery() {
     // Select Vcc as voltage reference, Vbg as input, and left-justify result
     ADMUX = _BV(ADLAR) | _BV(MUX3) | _BV(MUX2);
 
@@ -215,10 +212,9 @@ int main(void) {
 
         // Set all I/O pins to input, and pull-up resistors for floating pins
         DDRB = 0;
-        PORTB = 0;
-//        PORTB = _BV(PIN_UNUSED);
+        PORTB = _BV(PIN_UNUSED);
 
-#if 0
+#if 1
         // Go to sleep
         sleep();
 
@@ -232,7 +228,6 @@ int main(void) {
 //        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
 //        PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
         DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
-//        DDRB =                   _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
         PORTB = _BV(PIN_IR_POWER) | _BV(PIN_IR_DATA);
 
 
@@ -250,13 +245,28 @@ int main(void) {
                     _delay_us(8);  // Allow 1uS for loop setup
                 }
 
-                if (irrecv.decode(&results)) {
-                    if(results.value == REPEAT) {
+                if (irrecv.decode()) {
+                    if(results.bits == 32) {
+                        uint8_t rate =        (results.value >> 24) & 0xFF;
+                        uint8_t counts =      (results.value >> 16) & 0xFF;
+                        uint8_t sensitivity = (results.value >>  8) & 0xFF;
+                        resetCRC();
+                        updateCRC(rate);
+                        updateCRC(counts);
+                        updateCRC(sensitivity);
+                        if(getCRC() == (results.value & 0xFF)) {
+                            // 
+                            // rejoice!
+                            heartbeatSpeed = rate;
+                            heartbeatReps = counts;
+                            debounceCount = sensitivity;
+                            saveRates();
 
-                        for(uint8_t i = 0; i < 150; i++) {
-                            setLEDs(i%2==0?255:0);
-                            _delay_ms(10);
-                         }
+                            for(uint8_t i = 0; i < 50; i++) {
+                                setLEDs(i%2==0?255:0);
+                                _delay_ms(10);
+                            }
+                        }
                     }
 
                     irrecv.resume(); // Receive the next value
