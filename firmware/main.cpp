@@ -262,7 +262,7 @@ int main(void) {
                             saveRates();
                        
                             for(uint8_t i = 0; i < 50; i++) {
-                                setLEDs(i%2==0?255:0);
+                                setLEDs(i%2==0?30:0);
                                 _delay_ms(10);
                             }
                         }
