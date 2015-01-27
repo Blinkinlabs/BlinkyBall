@@ -193,7 +193,7 @@
 #define SHARP_BITS 15
 #define DISH_BITS 16
 
-#define TOLERANCE 40  // percent tolerance in measurements
+#define TOLERANCE 25  // percent tolerance in measurements
 #define LTOL (1.0 - TOLERANCE/100.) 
 #define UTOL (1.0 + TOLERANCE/100.) 
 
