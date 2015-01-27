@@ -304,15 +304,21 @@ int IRrecv::decode(decode_results *results) {
 // NECs have a repeat only 4 items long
 long IRrecv::decodeNEC(decode_results *results) {
   // TODO: Delete me?
-  cli();
-  pulseOut(0xA1);
-  pulseOut(0xA2);
-  pulseOut(irparams.rawlen);
-
-  for(uint8_t pos=0; pos < irparams.rawlen; pos++) {
-    pulseOut(results->rawbuf[pos]);
-  }
-  sei();
+//  cli();
+//  pulseOut(0xA1);
+//  pulseOut(0xA2);
+//  pulseOut(irparams.rawlen);
+//
+//  for(uint8_t pos=0; pos < irparams.rawlen; pos++) {
+//    pulseOut(results->rawbuf[pos]);
+//  }
+//  sei();
+//
+//  cli();
+//  pulseOut(0xEE);
+//  pulseOut(0x00);
+//  pulseOut(irparams.rawlen);
+//  sei();
 
   long data = 0;
   int offset = 1; // Skip first space
@@ -321,6 +327,16 @@ long IRrecv::decodeNEC(decode_results *results) {
     return ERR;
   }
   offset++;
+
+//  cli();
+//  pulseOut(0xED);
+//  pulseOut(0x00);
+//  pulseOut(irparams.rawlen);
+//  pulseOut(irparams.rawlen == 4);
+//  pulseOut(MATCH_SPACE(results->rawbuf[offset], NEC_RPT_SPACE));
+//  pulseOut(MATCH_MARK(results->rawbuf[offset+1], NEC_BIT_MARK));
+//  sei();
+
   // Check for repeat
   if (irparams.rawlen == 4 &&
     MATCH_SPACE(results->rawbuf[offset], NEC_RPT_SPACE) &&
@@ -330,14 +346,17 @@ long IRrecv::decodeNEC(decode_results *results) {
     results->decode_type = NEC;
     return DECODED;
   }
+
   if (irparams.rawlen < 2 * NEC_BITS + 4) {
     return ERR;
   }
+
   // Initial space  
   if (!MATCH_SPACE(results->rawbuf[offset], NEC_HDR_SPACE)) {
     return ERR;
   }
   offset++;
+
   for (int i = 0; i < NEC_BITS; i++) {
     if (!MATCH_MARK(results->rawbuf[offset], NEC_BIT_MARK)) {
       return ERR;

@@ -243,19 +243,21 @@ int main(void) {
             setLEDs(0);
 
             // For the remaining 28/50th, listen for an IR signal
-
             irrecv.enableIRIn(); // Start the receiver
            
-            for(int irLoop = 0; irLoop < (500 - EKG_DATA_LENGTH); irLoop++) {
+            for(int irLoop = 20; irLoop < (500 - EKG_DATA_LENGTH); irLoop++) {
                 for(uint8_t count = 0; count < heartbeatSpeed; count++) {
                     _delay_us(8);  // Allow 1uS for loop setup
                 }
 
                 if (irrecv.decode(&results)) {
-                    for(uint8_t i = 0; i < 150; i++) {
-                        setLEDs(i%2==0?255:0);
-                        _delay_ms(10);
-                     }
+                    if(results.value == REPEAT) {
+
+                        for(uint8_t i = 0; i < 150; i++) {
+                            setLEDs(i%2==0?255:0);
+                            _delay_ms(10);
+                         }
+                    }
 
                     irrecv.resume(); // Receive the next value
                 }
