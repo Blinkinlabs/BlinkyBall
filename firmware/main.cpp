@@ -198,8 +198,7 @@ int main(void) {
 
     // Set up timer1 to do PWM output to the LEDs (OC1A)
     OCR1C = 0xFF;
-    OCR1C = 0xF0;
-    TCCR1 = _BV(PWM1A) | _BV(COM1A1) | _BV(CS11) | _BV(CS10);
+    TCCR1 = _BV(PWM1A) | _BV(COM1A1) | _BV(CS10);
 
     loadRates();
 
