@@ -51,9 +51,6 @@ volatile uint8_t heartbeatSpeed;
 // Counter for interrupt-based debounce routine
 volatile uint8_t interruptCount;
 
-#define bitSet(reg, bit) reg |= (1<<bit)
-#define bitClear(reg, bit) reg &= ~(1<<bit)
-
 // long delay function
 void long_delay_ms(uint16_t ms) {
     for(ms /= 10; ms>0; ms--) _delay_ms(10);
@@ -201,9 +198,7 @@ int main(void) {
 
     // Set up timer1 to do PWM output to the LEDs (OC1A)
     OCR1C = 0xFF;
-    TCCR1 = _BV(PWM1A) | _BV(COM1A0) | _BV(CS10);
-
-    irrecv.blink13(1);
+    TCCR1 = _BV(PWM1A) | _BV(COM1A1) | _BV(CS10);
 
     loadRates();
 
@@ -221,7 +216,8 @@ int main(void) {
 
         // Set all I/O pins to input, and pull-up resistors for floating pins
         DDRB = 0;
-        PORTB = _BV(PIN_UNUSED);
+        PORTB = 0;
+//        PORTB = _BV(PIN_UNUSED);
 
         // Go to sleep
         sleep();
@@ -232,8 +228,11 @@ int main(void) {
         }
 
         // Set the LED pin as a output, and enable the IR receiver
-        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
-        PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
+//        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
+//        PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
+        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
+        PORTB = _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
+
 
         // Turn on the IR Receiver
         irrecv.enableIRIn(); // Start the receiver
@@ -242,8 +241,8 @@ int main(void) {
         for(uint8_t loopCount = 0; loopCount < heartbeatReps; loopCount++) {
             playEKG();
 
-            if (irrecv.decode(&results)) {
-                for(uint8_t i = 0; i < 50; i++) {
+            if (!irrecv.decode(&results)) {
+                for(uint8_t i = 0; i < 150; i++) {
                     setLEDs(i%2==0?255:0);
                     _delay_ms(10);
                 }
