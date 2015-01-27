@@ -15,14 +15,7 @@
 #include <avr/eeprom.h>
 #include "ekg_data.h"
 #include "irremote.h"
-
-// Define pins
-#define PIN_LED_ON      PB1     // LED control pin; pulled low externally
-#define PIN_WAKEUP      PB2     // Wakeup pin; pulled high externally
-#define PIN_IR_POWER    PB4     // IR Power supply
-#define PIN_IR_DATA     PB3     // IR Data input
-
-#define PIN_UNUSED      PB0     // Unused pin; should configure as pull-up
+#include "blinkyball.h"
 
 
 // System parameters
@@ -123,6 +116,7 @@ void loadRates() {
     heartbeatSpeed = eeprom_read_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS);
 }
 
+// Play back one loop of the heartbeat signal
 void playEKG() {
     int position;
 
@@ -130,10 +124,52 @@ void playEKG() {
         setLEDs(pgm_read_byte(&ekgData[position]));
 
         // make a delay
+        // Note that the system is heavily loaded by the IR sensor,
+        // so this number has to be tuned.
         for(uint8_t count = 0; count < heartbeatSpeed; count++) {
-            _delay_us(9);  // Allow 1uS for loop setup
+            _delay_us(8);  // Allow 1uS for loop setup
         }
     }
+}
+
+// Meausre the battery voltage under load
+// @return Battery voltage, in counts (255=5V, 127=2.5V, etc)
+uint8_t measureBattery() {
+    // Select Vcc as voltage reference, Vbg as input, and left-justify result
+    ADMUX = _BV(ADLAR) | _BV(MUX3) | _BV(MUX2);
+
+    // Turn on the ADC, disable interrupts, and set the prescaler to /32
+    ADCSRA = _BV(ADEN) | _BV(ADPS2);
+   
+    // Turn on the LEDs
+    setLEDs(255);
+
+    // Wait 1ms as per the datasheet recommendation before sampling Vbg
+    _delay_ms(1);
+
+    // Trigger a conversion
+    ADCSRA |= _BV(ADSC);
+
+    // Wait for conversion to finish
+    while(ADCSRA & _BV(ADSC)) {}
+
+    // Turn off the LEDs
+    setLEDs(0);
+
+    // Sample ADCH
+    uint8_t measured = ADCH;
+
+    // Disable ADC
+    ADCSRA = 0;
+
+    // The measured value is equal to:
+    // measured = Vbg/Vcc*counts
+    // so Vcc = Vbg*counts/measured
+    // to put it in counts (0-255), multiply by 255/5V:
+    // Vcc = Vbg*counts/measured*255/5
+    // Vbg is 1.1V nominally, so this can be reduced to:
+    // 14305 / measured
+    return 14305 / measured;
 }
 
 // program entry point
@@ -147,7 +183,7 @@ int main(void) {
         : :
         "z" (&CLKPR),
         "r" ((uint8_t) (1<<CLKPCE)),
-        "r" ((uint8_t) 0)  // new CLKPR value
+        "r" ((uint8_t) 0)  // new CLKPR value 0=8MHz, 1=4MHz, 2=2MHz, 3=1MHz)
     );
 
     bitSet(ACSR, ACD);          // Disable the analog comparitor
@@ -157,7 +193,7 @@ int main(void) {
 
     // Disable clicks to peripherals that we aren't using
     // (This saves power in run mode)
-    PRR |= _BV(PRUSI) | _BV(PRADC);
+    PRR |= _BV(PRUSI);
 
     // Configure the sleep mode and wakeup interrupt
     MCUCR &= ~(_BV(ISC01) | _BV(ISC00));    // INT0 on low level
@@ -167,6 +203,7 @@ int main(void) {
     OCR1C = 0xFF;
     TCCR1 = _BV(PWM1A) | _BV(COM1A0) | _BV(CS10);
 
+    irrecv.blink13(1);
 
     loadRates();
 
@@ -190,7 +227,7 @@ int main(void) {
         sleep();
 
         // Do a quick debounce check, to discard small shakes
-        if(interruptCount <= debounceCount) {
+        if(interruptCount < debounceCount) {
             continue;
         }
 

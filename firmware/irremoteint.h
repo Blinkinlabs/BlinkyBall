@@ -28,14 +28,9 @@
 #define bitClear(reg, bit) reg &= ~(1<<bit)
 
 #include <stdint.h>
+
+#include "blinkyball.h"
 //// Arduino Shim //////
-
-// TODO: Copy from main.cpp!!!
-#define PIN_LED_ON   PB1
-#define PIN_WAKEUP   PB2
-#define PIN_IR_POWER PB4
-#define PIN_IR_DATA  PB3
-
 
 // define which timer to use
 //

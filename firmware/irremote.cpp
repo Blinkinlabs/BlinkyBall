@@ -120,6 +120,7 @@ void IRrecv::enableIRIn() {
   // initialize state machine variables
   irparams.rcvstate = STATE_IDLE;
   irparams.rawlen = 0;
+  irparams.timer = 0;
 
   // set pin modes
   pinMode(irparams.recvpin, INPUT);
@@ -147,7 +148,6 @@ void IRrecv::blink13(int blinkflag)
 ISR(TIMER_INTR_NAME)
 {
   TIMER_RESET;
-  bitSet(PORTB, PIN_LED_ON);
 
   uint8_t irdata = (uint8_t)digitalRead(irparams.recvpin);
 
@@ -210,7 +210,6 @@ ISR(TIMER_INTR_NAME)
       BLINKLED_OFF();  // turn pin 13 LED off
     }
   }
-  bitClear(PORTB, PIN_LED_ON);
 }
 
 void IRrecv::resume() {
@@ -304,12 +303,17 @@ int IRrecv::decode(decode_results *results) {
 
 // NECs have a repeat only 4 items long
 long IRrecv::decodeNEC(decode_results *results) {
+  bitSet(PORTB, PIN_UNUSED);
+  bitClear(PORTB, PIN_UNUSED);
+
   long data = 0;
   int offset = 1; // Skip first space
   // Initial mark
   if (!MATCH_MARK(results->rawbuf[offset], NEC_HDR_MARK)) {
     return ERR;
   }
+  bitSet(PORTB, PIN_UNUSED);
+  bitClear(PORTB, PIN_UNUSED);
   offset++;
   // Check for repeat
   if (irparams.rawlen == 4 &&
@@ -320,13 +324,19 @@ long IRrecv::decodeNEC(decode_results *results) {
     results->decode_type = NEC;
     return DECODED;
   }
+  bitSet(PORTB, PIN_UNUSED);
+  bitClear(PORTB, PIN_UNUSED);
   if (irparams.rawlen < 2 * NEC_BITS + 4) {
     return ERR;
   }
+  bitSet(PORTB, PIN_UNUSED);
+  bitClear(PORTB, PIN_UNUSED);
   // Initial space  
   if (!MATCH_SPACE(results->rawbuf[offset], NEC_HDR_SPACE)) {
     return ERR;
   }
+  bitSet(PORTB, PIN_UNUSED);
+  bitClear(PORTB, PIN_UNUSED);
   offset++;
   for (int i = 0; i < NEC_BITS; i++) {
     if (!MATCH_MARK(results->rawbuf[offset], NEC_BIT_MARK)) {
@@ -344,6 +354,8 @@ long IRrecv::decodeNEC(decode_results *results) {
     }
     offset++;
   }
+  bitSet(PORTB, PIN_UNUSED);
+  bitClear(PORTB, PIN_UNUSED);
   // Success
   results->bits = NEC_BITS;
   results->value = data;
