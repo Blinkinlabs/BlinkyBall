@@ -303,6 +303,7 @@ int IRrecv::decode(decode_results *results) {
 
 // NECs have a repeat only 4 items long
 long IRrecv::decodeNEC(decode_results *results) {
+  // TODO: Delete me?
   cli();
   pulseOut(0xA1);
   pulseOut(0xA2);

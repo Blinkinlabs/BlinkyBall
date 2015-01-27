@@ -1,4 +1,5 @@
-#define EKG_DATA_LENGTH 500
+//#define EKG_DATA_LENGTH 500
+#define EKG_DATA_LENGTH 220
 const uint8_t ekgData[EKG_DATA_LENGTH] PROGMEM = {
 220, 225, 230, 235, 239, 243, 246, 249, 251, 253, 
 254, 254, 255, 254, 253, 252, 250, 248, 245, 242, 
@@ -22,6 +23,7 @@ const uint8_t ekgData[EKG_DATA_LENGTH] PROGMEM = {
   6,   6,   5,   5,   4,   4,   4,   3,   3,   3, 
   2,   2,   2,   2,   2,   1,   1,   1,   1,   1, 
   1,   1,   1,   0,   0,   0,   0,   0,   0,   0, 
+/* 28 off samples, we'll use this time to do IR reception
   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
@@ -50,5 +52,6 @@ const uint8_t ekgData[EKG_DATA_LENGTH] PROGMEM = {
   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
+*/
 };
 

@@ -198,7 +198,8 @@ int main(void) {
 
     // Set up timer1 to do PWM output to the LEDs (OC1A)
     OCR1C = 0xFF;
-    TCCR1 = _BV(PWM1A) | _BV(COM1A1) | _BV(CS10);
+    OCR1C = 0xF0;
+    TCCR1 = _BV(PWM1A) | _BV(COM1A1) | _BV(CS11) | _BV(CS10);
 
     loadRates();
 
@@ -206,7 +207,6 @@ int main(void) {
     // then we go to sleep. When woken up, run a quick debounce routine to determine if we
     // should go into LED display mode, at at the completion go back to sleep.
     for(;;){
-
         // Disable the IR timer
         irrecv.disableIRIn();
 
@@ -219,6 +219,7 @@ int main(void) {
         PORTB = 0;
 //        PORTB = _BV(PIN_UNUSED);
 
+#if 0
         // Go to sleep
         sleep();
 
@@ -226,28 +227,39 @@ int main(void) {
         if(interruptCount < debounceCount) {
             continue;
         }
+#endif
 
         // Set the LED pin as a output, and enable the IR receiver
 //        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
 //        PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
         DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
-        PORTB = _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
+//        DDRB =                   _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
+        PORTB = _BV(PIN_IR_POWER) | _BV(PIN_IR_DATA);
 
-
-        // Turn on the IR Receiver
-        irrecv.enableIRIn(); // Start the receiver
 
         // Play the EKG back, checking for an IR reception
         for(uint8_t loopCount = 0; loopCount < heartbeatReps; loopCount++) {
+            // For the first 22/50th of the heartbeat, play the EKG sample
             playEKG();
+            setLEDs(0);
 
-            if (!irrecv.decode(&results)) {
-                for(uint8_t i = 0; i < 150; i++) {
-                    setLEDs(i%2==0?255:0);
-                    _delay_ms(10);
+            // For the remaining 28/50th, listen for an IR signal
+
+            irrecv.enableIRIn(); // Start the receiver
+           
+            for(int irLoop = 0; irLoop < (500 - EKG_DATA_LENGTH); irLoop++) {
+                for(uint8_t count = 0; count < heartbeatSpeed; count++) {
+                    _delay_us(8);  // Allow 1uS for loop setup
                 }
 
-                irrecv.resume(); // Receive the next value
+                if (irrecv.decode(&results)) {
+                    for(uint8_t i = 0; i < 150; i++) {
+                        setLEDs(i%2==0?255:0);
+                        _delay_ms(10);
+                     }
+
+                    irrecv.resume(); // Receive the next value
+                }
             }
         }
     }

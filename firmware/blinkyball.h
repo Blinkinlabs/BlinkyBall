@@ -13,7 +13,7 @@
 #define bitClear(reg, bit) reg &= ~(1<<bit)
 
 #include <avr/io.h>
-#include <avr/delay.h>
+#include <util/delay.h>
 
 inline void pulseOut(uint8_t data) {
     const uint8_t BIT_DELAY = 104; // ~9600 baud
