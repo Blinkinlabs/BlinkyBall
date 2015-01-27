@@ -309,14 +309,14 @@ int IRrecv::decode() {
 
 // NECs have a repeat only 4 items long
 long IRrecv::decodeNEC() {
-  // TODO: Delete me?
-  pulseOut(0xA1);
-  pulseOut(0xA2);
-  pulseOut(irparams.rawlen);
-
-  for(uint8_t pos=0; pos < irparams.rawlen; pos++) {
-    pulseOut(results.rawbuf[pos]);
-  }
+//  TODO: Delete me?
+//  pulseOut(0xA1);
+//  pulseOut(0xA2);
+//  pulseOut(irparams.rawlen);
+//
+//  for(uint8_t pos=0; pos < irparams.rawlen; pos++) {
+//    pulseOut(results.rawbuf[pos]);
+//  }
 
   long data = 0;
   int offset = 1; // Skip first space
@@ -335,27 +335,19 @@ long IRrecv::decodeNEC() {
     return DECODED;
   }
 
-  pulseOut(0xEE);
-  pulseOut(0x00);
-  pulseOut(irparams.rawlen);
+//  pulseOut(0xEE);
+//  pulseOut(0x00);
+//  pulseOut(irparams.rawlen);
 
   if (irparams.rawlen < 2 * NEC_BITS + 4) {
     return ERR;
   }
-
-  pulseOut(0xEE);
-  pulseOut(0x01);
-  pulseOut(irparams.rawlen);
 
   // Initial space  
   if (!MATCH_SPACE(results.rawbuf[offset], NEC_HDR_SPACE)) {
     return ERR;
   }
   offset++;
-
-  pulseOut(0xEE);
-  pulseOut(0x02);
-  pulseOut(irparams.rawlen);
 
   for (int i = 0; i < NEC_BITS; i++) {
     if (!MATCH_MARK(results.rawbuf[offset], NEC_BIT_MARK)) {

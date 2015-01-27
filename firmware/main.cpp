@@ -225,14 +225,14 @@ int main(void) {
 #endif
 
         // Set the LED pin as a output, and enable the IR receiver
-//        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
-//        PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
-        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
-        PORTB = _BV(PIN_IR_POWER) | _BV(PIN_IR_DATA);
+        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
+        PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
+//        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
+//        PORTB = _BV(PIN_IR_POWER) | _BV(PIN_IR_DATA);
 
 
         // Play the EKG back, checking for an IR reception
-        for(uint8_t loopCount = 0; loopCount < heartbeatReps; loopCount++) {
+        for(uint8_t loopCount = heartbeatReps; loopCount > 0; loopCount--) {
             // For the first 22/50th of the heartbeat, play the EKG sample
             playEKG();
             setLEDs(0);
@@ -255,19 +255,19 @@ int main(void) {
                         updateCRC(counts);
                         updateCRC(sensitivity);
                         if(getCRC() == (results.value & 0xFF)) {
-                            // 
                             // rejoice!
                             heartbeatSpeed = rate;
                             heartbeatReps = counts;
                             debounceCount = sensitivity;
                             saveRates();
-
+                       
                             for(uint8_t i = 0; i < 50; i++) {
                                 setLEDs(i%2==0?255:0);
                                 _delay_ms(10);
                             }
                         }
                     }
+                    loopCount = 20;  // Keep the ball awake as long as we have an active IR input.
 
                     irrecv.resume(); // Receive the next value
                 }
