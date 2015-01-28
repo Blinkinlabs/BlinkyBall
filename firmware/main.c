@@ -13,7 +13,7 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 #include <avr/eeprom.h>
-#include "irremote.h"
+#include "IRremote.h"
 #include "blinkyball.h"
 #include "crc.h"
 
@@ -23,9 +23,6 @@
 
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
 volatile uint8_t debounceCount;
-
-// Number of heartbeats played during each on-time
-volatile uint8_t heartbeatReps;
 
 // Heartbeat speed, in 10ths of a millisecond per sample
 // To convert from BPM to this constant, use the following formula:
@@ -71,7 +68,6 @@ ISR(INT0_vect) {
 // Store the configuration rates in EEPROM
 inline void saveRates() {
     eeprom_write_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS,   DEBOUNCE_COUNT_DEFAULT);
-    eeprom_write_byte((uint8_t*)HEARTBEAT_REPS_ADDRESS,   HEARTBEAT_REPS_DEFAULT);
     eeprom_write_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS,  HEARTBEAT_SPEED_DEFAULT);
     eeprom_write_byte((uint8_t*)MAGIC_HEADER_ADDRESS,     MAGIC_HEADER_VALUE);
 }
@@ -82,17 +78,16 @@ inline void loadRates() {
     // If the EEPROM wasn't initialized, do so now
     if(eeprom_read_byte((uint8_t*)MAGIC_HEADER_ADDRESS) != MAGIC_HEADER_VALUE) {
         debounceCount = DEBOUNCE_COUNT_DEFAULT;
-        heartbeatReps = HEARTBEAT_REPS_DEFAULT;
         heartbeatSpeed = HEARTBEAT_SPEED_DEFAULT;
         saveRates();
     }
 
     debounceCount =  eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
-    heartbeatReps =  eeprom_read_byte((uint8_t*)HEARTBEAT_REPS_ADDRESS);
     heartbeatSpeed = eeprom_read_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS);
 }
 
 // Play back one loop of the heartbeat signal
+// Duration: nominal 7 seconds at 60 BPM
 void playEKG() {
     for(uint16_t position = 0; position < EKG_DATA_LENGTH; position++) {
         setLEDs(pgm_read_byte(&ekgData[position]));
@@ -100,6 +95,44 @@ void playEKG() {
         // make a delay
         for(uint8_t count = 0; count < heartbeatSpeed; count++) {
             _delay_us(100);
+        }
+    }
+}
+
+// Listen for an IR command
+// Duration: 4+ seconds
+void monitorIR() {
+    setLEDs(0); // Make sure that the LEDs are off to prevent interference
+    enableIRIn(); // Start the receiver
+    
+    for(uint16_t irLoop = 0; irLoop < 100; irLoop++) {
+        _delay_ms(50);
+
+        if (decodeIR()) {
+            if(results.bits == 32) {
+                uint8_t rate =        (results.value >> 24) & 0xFF;
+                uint8_t counts =      (results.value >> 16) & 0xFF;
+                uint8_t sensitivity = (results.value >>  8) & 0xFF;
+                resetCRC();
+                updateCRC(rate);
+                updateCRC(counts);
+                updateCRC(sensitivity);
+                if(getCRC() == (results.value & 0xFF)) {
+                    // rejoice!
+                    heartbeatSpeed = rate;
+                    debounceCount = sensitivity;
+                    saveRates();
+               
+                    for(uint8_t i = 0; i < 50; i++) {
+                        setLEDs(i%2==0?30:0);
+                        _delay_ms(10);
+                    }
+                }
+
+                irLoop = 0;
+            }
+
+            resumeIR(); // Receive the next value
         }
     }
 }
@@ -126,7 +159,7 @@ int main(void) {
 
     // Disable clicks to peripherals that we aren't using
     // (This saves power in run mode)
-    PRR |= _BV(PRUSI);
+    PRR |= _BV(PRUSI) | _BV(ADC);
 
     // Configure the sleep mode and wakeup interrupt
     MCUCR &= ~(_BV(ISC01) | _BV(ISC00));    // INT0 on low level
@@ -167,42 +200,10 @@ int main(void) {
 
         // First play the heartbeat pattern back
         playEKG();
-        setLEDs(0);
 
-        // Now listen for an IR signal
-        enableIRIn(); // Start the receiver
-        
-        for(uint16_t irLoop = 0; irLoop < 100; irLoop++) {
-            _delay_ms(50);
+        // Next, monitor the IR input
+        monitorIR();
 
-            if (decodeIR()) {
-                if(results.bits == 32) {
-                    uint8_t rate =        (results.value >> 24) & 0xFF;
-                    uint8_t counts =      (results.value >> 16) & 0xFF;
-                    uint8_t sensitivity = (results.value >>  8) & 0xFF;
-                    resetCRC();
-                    updateCRC(rate);
-                    updateCRC(counts);
-                    updateCRC(sensitivity);
-                    if(getCRC() == (results.value & 0xFF)) {
-                        // rejoice!
-                        heartbeatSpeed = rate;
-                        heartbeatReps = counts;
-                        debounceCount = sensitivity;
-                        saveRates();
-                   
-                        for(uint8_t i = 0; i < 50; i++) {
-                            setLEDs(i%2==0?30:0);
-                            _delay_ms(10);
-                        }
-                    }
-
-                    irLoop = 0;
-                }
-
-                resumeIR(); // Receive the next value
-            }
-        }
     }
     
     return 0;   /* never reached */

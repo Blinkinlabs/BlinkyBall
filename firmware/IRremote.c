@@ -1,6 +1,9 @@
 /*
  * IRremote
  * Version 0.11 August, 2009
+ *
+ * Ported to C for use in ATTiny, 2014 Matt Mets
+ *
  * Copyright 2009 Ken Shirriff
  * For details, see http://arcfn.com/2009/08/multi-protocol-infrared-remote-library.html
  *
