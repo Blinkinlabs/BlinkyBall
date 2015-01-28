@@ -25,8 +25,7 @@
 // #define TEST
 
 // Results returned from the decoder
-class decode_results {
-public:
+typedef struct {
 //  union { // This is used for decoding Panasonic and Sharp data
 //    unsigned int panasonicAddress;
 //    unsigned int sharpAddress;
@@ -35,7 +34,7 @@ public:
   int bits; // Number of bits in decoded value
   volatile unsigned int *rawbuf; // Raw intervals in .5 us ticks
   int rawlen; // Number of records in rawbuf.
-};
+} decode_results_t;
 
 // Values for decode_type
 #define NEC 1
@@ -55,35 +54,10 @@ public:
 // Decoded value for NEC when a repeat code is received
 #define REPEAT 0xffffffff
 
-// main class for receiving IR
-class IRrecv
-{
-public:
-//  IRrecv(int recvpin);
-//  void blink13(int blinkflag);
-  int decode();
-  void enableIRIn();
-  void disableIRIn();
-  void resume();
-private:
-  // These are called by decode
-  long decodeNEC();
-#if 0
-  long decodeSony(decode_results *results);
-  long decodeSanyo(decode_results *results);
-  long decodeMitsubishi(decode_results *results);
-  long decodeRC5(decode_results *results);
-  long decodeRC6(decode_results *results);
-  long decodePanasonic(decode_results *results);
-  long decodeLG(decode_results *results);
-  long decodeJVC(decode_results *results);
-  long decodeSAMSUNG(decode_results *results);
-  long decodeHash(decode_results *results);
-#endif
-  int compare(unsigned int oldval, unsigned int newval);
-
-} 
-;
+int decodeIR();
+void enableIRIn();
+void disableIRIn();
+void resumeIR();
 
 
 // Some useful constants

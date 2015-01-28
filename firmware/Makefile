@@ -16,16 +16,20 @@ CXX = avr-g++
 
 CPPFLAGS = -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 CXXFLAGS = 
-CFLAGS = 
+CFLAGS = -std=c99
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
 
-CPP_FILES = \
-	main.cpp \
-	irremote.cpp \
-        crc.cpp
+C_FILES = \
+	main.c \
+	irremote.c \
+        crc.c \
+        blinkyball.c
 
-OBJECTS := $(CPP_FILES:.cpp=.o)
+
+CPP_FILES = 
+
+OBJECTS := $(CPP_FILES:.cpp=.o) $(C_FILES:.c=.o)
 
 # symbolic targets:
 all:	$(TARGET).hex

@@ -9,34 +9,30 @@
 
 #define PIN_UNUSED      PB0     // Unused pin; should configure as pull-up
 
+// System parameters
+#define DEBOUNCE_COUNT_DEFAULT  15
+#define HEARTBEAT_REPS_DEFAULT  6
+#define HEARTBEAT_SPEED_DEFAULT 200
+
+// EEPROM data addresses
+#define MAGIC_HEADER_ADDRESS    0
+#define DEBOUNCE_COUNT_ADDRESS  1
+#define HEARTBEAT_REPS_ADDRESS  2
+#define HEARTBEAT_SPEED_ADDRESS 3
+
+// Magic header to determine if the EEPROM was written properly
+#define  MAGIC_HEADER_VALUE     0xDE
+
+
 #define bitSet(reg, bit) reg |= (1<<bit)
 #define bitClear(reg, bit) reg &= ~(1<<bit)
+
+#define setLEDs(value) OCR1A = value
 
 #include <avr/io.h>
 #include <util/delay.h>
 
-inline void pulseOut(uint8_t data) {
-    const uint8_t BIT_DELAY = 104; // ~9600 baud
-
-    // start bit
-    bitClear(PORTB, PIN_UNUSED);
-    _delay_us(BIT_DELAY);
-
-    // data bits, lsb first
-    for(uint8_t bit = 0; bit < 8; bit++) {
-        if((data >> bit) & 1) {
-            bitSet(PORTB, PIN_UNUSED);
-        }
-        else {
-            bitClear(PORTB, PIN_UNUSED);
-        }
-        _delay_us(BIT_DELAY);
-    }
-
-    // Stop bits
-    bitSet(PORTB, PIN_UNUSED);
-    _delay_us(BIT_DELAY);
-    _delay_us(BIT_DELAY);
-}
+void pulseOut(uint8_t data);
+uint8_t measureBattery();
 
 #endif

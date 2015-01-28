@@ -19,21 +19,6 @@
 #include "crc.h"
 
 
-// System parameters
-#define DEBOUNCE_COUNT_DEFAULT 15
-#define HEARTBEAT_REPS_DEFAULT 6
-#define HEARTBEAT_SPEED_DEFAULT 200
-
-// EEPROM data addresses
-const uint8_t MAGIC_HEADER_ADDRESS    = 0;
-const uint8_t DEBOUNCE_COUNT_ADDRESS  = 1;
-const uint8_t HEARTBEAT_REPS_ADDRESS  = 2;
-const uint8_t HEARTBEAT_SPEED_ADDRESS = 3;
-
-// Magic header to determine if the EEPROM was written properly
-const uint8_t MAGIC_HEADER_VALUE = 0xDE;
-
-
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
 volatile uint8_t debounceCount;
 
@@ -53,8 +38,7 @@ volatile uint8_t heartbeatSpeed;
 volatile uint8_t interruptCount;
 
 // IR Receiver 
-IRrecv irrecv;
-decode_results results;
+extern decode_results_t results;
 
 
 void sleep()
@@ -81,9 +65,6 @@ ISR(INT0_vect) {
     interruptCount++;
 }
 
-inline void setLEDs(uint8_t value) {
-    OCR1A = value;
-}
 
 // Store the configuration rates in EEPROM
 inline void saveRates() {
@@ -110,7 +91,7 @@ inline void loadRates() {
 }
 
 // Play back one loop of the heartbeat signal
-inline void playEKG() {
+void playEKG() {
     uint8_t position = 0;
     uint8_t count = 0;
 
@@ -126,52 +107,13 @@ inline void playEKG() {
     }
 }
 
-// Meausre the battery voltage under load
-// @return Battery voltage, in counts (255=5V, 127=2.5V, etc)
-inline uint8_t measureBattery() {
-    // Select Vcc as voltage reference, Vbg as input, and left-justify result
-    ADMUX = _BV(ADLAR) | _BV(MUX3) | _BV(MUX2);
-
-    // Turn on the ADC, disable interrupts, and set the prescaler to /32
-    ADCSRA = _BV(ADEN) | _BV(ADPS2);
-   
-    // Turn on the LEDs
-    setLEDs(255);
-
-    // Wait 1ms as per the datasheet recommendation before sampling Vbg
-    _delay_ms(1);
-
-    // Trigger a conversion
-    ADCSRA |= _BV(ADSC);
-
-    // Wait for conversion to finish
-    while(ADCSRA & _BV(ADSC)) {}
-
-    // Turn off the LEDs
-    setLEDs(0);
-
-    // Sample ADCH
-    uint8_t measured = ADCH;
-
-    // Disable ADC
-    ADCSRA = 0;
-
-    // The measured value is equal to:
-    // measured = Vbg/Vcc*counts
-    // so Vcc = Vbg*counts/measured
-    // to put it in counts (0-255), multiply by 255/5V:
-    // Vcc = Vbg*counts/measured*255/5
-    // Vbg is 1.1V nominally, so this can be reduced to:
-    // 14305 / measured
-    return 14305 / measured;
-}
 
 // program entry point
 // Kinda sad that the production devices will only run this once T_T
 int main(void) {
 
     // Change the clock to 8MHz
-    asm volatile (
+    __asm__ volatile (
         "st Z,%1" "\n\t"
         "st Z,%2"
         : :
@@ -204,7 +146,7 @@ int main(void) {
     // should go into LED display mode, at at the completion go back to sleep.
     for(;;){
         // Disable the IR timer
-        irrecv.disableIRIn();
+        disableIRIn();
 
         // Turn off the LED outputs before disabling the pins
         setLEDs(0);
@@ -238,14 +180,14 @@ int main(void) {
             setLEDs(0);
 
             // For the remaining 28/50th, listen for an IR signal
-            irrecv.enableIRIn(); // Start the receiver
+            enableIRIn(); // Start the receiver
            
             for(int irLoop = 20; irLoop < (500 - EKG_DATA_LENGTH); irLoop++) {
                 for(uint8_t count = 0; count < heartbeatSpeed; count++) {
                     _delay_us(8);  // Allow 1uS for loop setup
                 }
 
-                if (irrecv.decode()) {
+                if (decodeIR()) {
                     if(results.bits == 32) {
                         uint8_t rate =        (results.value >> 24) & 0xFF;
                         uint8_t counts =      (results.value >> 16) & 0xFF;
@@ -269,7 +211,7 @@ int main(void) {
                     }
                     loopCount = 20;  // Keep the ball awake as long as we have an active IR input.
 
-                    irrecv.resume(); // Receive the next value
+                    resumeIR(); // Receive the next value
                 }
             }
         }
