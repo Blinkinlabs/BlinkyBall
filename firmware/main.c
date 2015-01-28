@@ -17,7 +17,6 @@
 #include "blinkyball.h"
 #include "crc.h"
 
-//#include "ekg_data.h"
 #include "seven_cycles.h"
 
 
@@ -105,31 +104,35 @@ void monitorIR() {
     setLEDs(0); // Make sure that the LEDs are off to prevent interference
     enableIRIn(); // Start the receiver
     
-    for(uint16_t irLoop = 0; irLoop < 100; irLoop++) {
-        _delay_ms(50);
+    for(uint32_t irLoop = 0; irLoop < IR_MONITOR_TIME; irLoop++) {
+        _delay_ms(100);
 
         if (decodeIR()) {
             if(results.bits == 32) {
-                uint8_t rate =        (results.value >> 24) & 0xFF;
-                uint8_t counts =      (results.value >> 16) & 0xFF;
-                uint8_t sensitivity = (results.value >>  8) & 0xFF;
+                uint8_t speed =         (results.value >> 24) & 0xFF;
+                uint8_t unused =        (results.value >> 16) & 0xFF;
+                uint8_t sensitivity =   (results.value >>  8) & 0xFF;
+
                 resetCRC();
-                updateCRC(rate);
-                updateCRC(counts);
+                updateCRC(speed);
+                updateCRC(unused);
                 updateCRC(sensitivity);
+
+                // If the CRC is valid, store the results.
                 if(getCRC() == (results.value & 0xFF)) {
-                    // rejoice!
-                    heartbeatSpeed = rate;
+                    heartbeatSpeed = speed;
                     debounceCount = sensitivity;
                     saveRates();
-               
+
+                    // Flash the LEDs to indicate IR reception
                     for(uint8_t i = 0; i < 50; i++) {
-                        setLEDs(i%2==0?30:0);
+                        setLEDs(i%2==0?60:0);
                         _delay_ms(10);
                     }
-                }
 
-                irLoop = 0;
+                    // And reset our timeout counter
+                    irLoop = 0; 
+                }
             }
 
             resumeIR(); // Receive the next value
@@ -149,7 +152,7 @@ int main(void) {
         : :
         "z" (&CLKPR),
         "r" ((uint8_t) (1<<CLKPCE)),
-        "r" ((uint8_t) 0)  // new CLKPR value 0=8MHz, 1=4MHz, 2=2MHz, 3=1MHz)
+        "r" ((uint8_t) 1)  // new CLKPR value 0=8MHz, 1=4MHz, 2=2MHz, 3=1MHz)
     );
 
     bitSet(ACSR, ACD);          // Disable the analog comparitor

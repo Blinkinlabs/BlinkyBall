@@ -4,7 +4,7 @@
 #
 
 DEVICE     = attiny85           # See avr-help for all possible devices
-CLOCK      = 8000000            # Clock speed
+CLOCK      = 4000000            # Clock speed
 PROGRAMMER = -c usbtiny -P usb # For using Adafruit USBtiny
 FUSES      = -U lfuse:w:0x62:m -U hfuse:w:0xdF:m -U efuse:w:0xff:m  # settings as taken from http://www.engbedded.com/fusecalc/
 

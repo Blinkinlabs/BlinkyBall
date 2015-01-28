@@ -10,8 +10,10 @@
 #define PIN_UNUSED      PB0     // Unused pin; should configure as pull-up
 
 // System parameters
-#define DEBOUNCE_COUNT_DEFAULT  15
-#define HEARTBEAT_SPEED_DEFAULT 140
+#define IR_MONITOR_TIME         30  // Amount of time to stay awake for IR reception, in 10ths of a second
+
+#define DEBOUNCE_COUNT_DEFAULT  15  // Wakeup sensitivity, in counts (higher is less sensitive)
+#define HEARTBEAT_SPEED_DEFAULT 140 // Heartbeat speed in 
 
 // EEPROM data addresses
 #define MAGIC_HEADER_ADDRESS    0
