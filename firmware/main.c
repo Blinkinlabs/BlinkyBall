@@ -13,10 +13,12 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 #include <avr/eeprom.h>
-#include "ekg_data.h"
 #include "irremote.h"
 #include "blinkyball.h"
 #include "crc.h"
+
+//#include "ekg_data.h"
+#include "seven_cycles.h"
 
 
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
@@ -25,13 +27,13 @@ volatile uint8_t debounceCount;
 // Number of heartbeats played during each on-time
 volatile uint8_t heartbeatReps;
 
-// Heartbeat speed, in 10ths of a microsecond per sample
+// Heartbeat speed, in 10ths of a millisecond per sample
 // To convert from BPM to this constant, use the following formula:
-// ((60/BPM/SAMPLES)) × 100000
+// ((60/BPM/SAMPLES)) × 10000
 // where SAMPLES is equal to the heartbeat sample count (500)
 // Examples:
-// 60bpm: 200
-// 100bpm: 120
+// 60bpm: 140
+// 150bpm: 56
 volatile uint8_t heartbeatSpeed;
 
 // Counter for interrupt-based debounce routine
@@ -92,17 +94,12 @@ inline void loadRates() {
 
 // Play back one loop of the heartbeat signal
 void playEKG() {
-    uint8_t position = 0;
-    uint8_t count = 0;
-
-    for(position = 0; position < EKG_DATA_LENGTH; position++) {
+    for(uint16_t position = 0; position < EKG_DATA_LENGTH; position++) {
         setLEDs(pgm_read_byte(&ekgData[position]));
 
         // make a delay
-        // Note that the system is heavily loaded by the IR sensor,
-        // so this number has to be tuned.
-        for(count = 0; count < heartbeatSpeed; count++) {
-            _delay_us(8);  // Allow 1uS for loop setup
+        for(uint8_t count = 0; count < heartbeatSpeed; count++) {
+            _delay_us(100);
         }
     }
 }
@@ -156,7 +153,6 @@ int main(void) {
         DDRB = 0;
         PORTB = _BV(PIN_UNUSED);
 
-#if 1
         // Go to sleep
         sleep();
 
@@ -164,55 +160,47 @@ int main(void) {
         if(interruptCount < debounceCount) {
             continue;
         }
-#endif
 
         // Set the LED pin as a output, and enable the IR receiver
         DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
         PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
-//        DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER) | _BV(PIN_UNUSED);
-//        PORTB = _BV(PIN_IR_POWER) | _BV(PIN_IR_DATA);
 
+        // First play the heartbeat pattern back
+        playEKG();
+        setLEDs(0);
 
-        // Play the EKG back, checking for an IR reception
-        for(uint8_t loopCount = heartbeatReps; loopCount > 0; loopCount--) {
-            // For the first 22/50th of the heartbeat, play the EKG sample
-            playEKG();
-            setLEDs(0);
+        // Now listen for an IR signal
+        enableIRIn(); // Start the receiver
+        
+        for(uint16_t irLoop = 0; irLoop < 100; irLoop++) {
+            _delay_ms(50);
 
-            // For the remaining 28/50th, listen for an IR signal
-            enableIRIn(); // Start the receiver
-           
-            for(int irLoop = 20; irLoop < (500 - EKG_DATA_LENGTH); irLoop++) {
-                for(uint8_t count = 0; count < heartbeatSpeed; count++) {
-                    _delay_us(8);  // Allow 1uS for loop setup
-                }
-
-                if (decodeIR()) {
-                    if(results.bits == 32) {
-                        uint8_t rate =        (results.value >> 24) & 0xFF;
-                        uint8_t counts =      (results.value >> 16) & 0xFF;
-                        uint8_t sensitivity = (results.value >>  8) & 0xFF;
-                        resetCRC();
-                        updateCRC(rate);
-                        updateCRC(counts);
-                        updateCRC(sensitivity);
-                        if(getCRC() == (results.value & 0xFF)) {
-                            // rejoice!
-                            heartbeatSpeed = rate;
-                            heartbeatReps = counts;
-                            debounceCount = sensitivity;
-                            saveRates();
-                       
-                            for(uint8_t i = 0; i < 50; i++) {
-                                setLEDs(i%2==0?30:0);
-                                _delay_ms(10);
-                            }
+            if (decodeIR()) {
+                if(results.bits == 32) {
+                    uint8_t rate =        (results.value >> 24) & 0xFF;
+                    uint8_t counts =      (results.value >> 16) & 0xFF;
+                    uint8_t sensitivity = (results.value >>  8) & 0xFF;
+                    resetCRC();
+                    updateCRC(rate);
+                    updateCRC(counts);
+                    updateCRC(sensitivity);
+                    if(getCRC() == (results.value & 0xFF)) {
+                        // rejoice!
+                        heartbeatSpeed = rate;
+                        heartbeatReps = counts;
+                        debounceCount = sensitivity;
+                        saveRates();
+                   
+                        for(uint8_t i = 0; i < 50; i++) {
+                            setLEDs(i%2==0?30:0);
+                            _delay_ms(10);
                         }
                     }
-                    loopCount = 20;  // Keep the ball awake as long as we have an active IR input.
 
-                    resumeIR(); // Receive the next value
+                    irLoop = 0;
                 }
+
+                resumeIR(); // Receive the next value
             }
         }
     }

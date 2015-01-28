@@ -12,7 +12,7 @@
 // System parameters
 #define DEBOUNCE_COUNT_DEFAULT  15
 #define HEARTBEAT_REPS_DEFAULT  6
-#define HEARTBEAT_SPEED_DEFAULT 200
+#define HEARTBEAT_SPEED_DEFAULT 140
 
 // EEPROM data addresses
 #define MAGIC_HEADER_ADDRESS    0
