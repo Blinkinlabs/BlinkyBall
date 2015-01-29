@@ -16,7 +16,6 @@
 #include "IRremote.h"
 #include "blinkyball.h"
 #include "crc.h"
-
 #include "seven_cycles_corrected.h"
 
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
@@ -72,13 +71,15 @@ ISR(INT0_vect) {
     interruptCount++;
 }
 
-
-// Store the configuration rates in EEPROM
-inline void validateSaveRates() {
+// Validate the configuration rates. Do this when they are loaded and when they are changed.
+inline void validateRates() {
     if(repeatCount > REPEAT_COUNT_MAXIMUM) {
         repeatCount = REPEAT_COUNT_MAXIMUM;
     }
+}
 
+// Store the configuration rates in EEPROM
+inline void saveRates() {
     eeprom_write_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS,   DEBOUNCE_COUNT_DEFAULT);
     eeprom_write_byte((uint8_t*)REPEAT_COUNT_ADDRESS,     REPEAT_COUNT_DEFAULT);
     eeprom_write_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS,  HEARTBEAT_SPEED_DEFAULT);
@@ -93,7 +94,7 @@ inline void loadRates() {
         debounceCount  = DEBOUNCE_COUNT_DEFAULT;
         repeatCount    = REPEAT_COUNT_DEFAULT;
         heartbeatSpeed = HEARTBEAT_SPEED_DEFAULT;
-        validateSaveRates();
+        saveRates();
     }
 
     debounceCount  = eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
@@ -112,23 +113,22 @@ void playEKG() {
 
 #ifdef BATTERY_SCALE
             // If the battery voltage is high, scale back the PWM so we save power.
-
             if(batteryVoltage > MIN_VOLTAGE) {
                 // Scaling function designed in grapher.
-                int16_t interm = (sample - 275) * 20 / 6;
-                sample = (uint8_t)((interm*interm)/400);
+                int16_t interm = (batteryVoltage - 275) * 20 / 6;
+                sample = (uint8_t)((((interm*interm)/400)*sample)/255);
             };
 
 #ifdef SERIAL_DEBUG
-if(position == 0) {
-            bitSet(DDRB, PIN_UNUSED);
-            pulseOut(0x12);
-            pulseOut(batteryVoltage);
-            pulseOut(sample);
-            bitClear(DDRB, PIN_UNUSED);
-}
-#endif
-#endif
+            if(position == 0) {
+                bitSet(DDRB, PIN_UNUSED);
+                pulseOut(0x12);
+                pulseOut(batteryVoltage);
+                pulseOut(sample);
+                bitClear(DDRB, PIN_UNUSED);
+            }
+#endif // SERIAL_DEBUG
+#endif // BATTERY_SCALE
 
             setLEDs(sample);
 
@@ -138,6 +138,8 @@ if(position == 0) {
             }
         }
     }
+
+    setLEDs(0);
 }
 
 // Listen for an IR command
@@ -147,7 +149,7 @@ void monitorIR() {
     enableIRIn(); // Start the receiver
     
     for(uint32_t irLoop = 0; irLoop < IR_MONITOR_TIME; irLoop++) {
-        _delay_ms(100);
+        _delay_ms(90);
 
         // If we didn't get an NEC command, bail
         if (!decodeIR()) {
@@ -169,7 +171,8 @@ void monitorIR() {
             heartbeatSpeed = speed;
             repeatCount = repeats;
             debounceCount = sensitivity;
-            validateSaveRates();
+            validateRates();
+            saveRates();
 
             // Flash the LEDs to indicate IR reception
             for(uint8_t i = 0; i < 5; i++) {
@@ -219,7 +222,9 @@ int main(void) {
     OCR1C = 0xFF;
     TCCR1 = _BV(PWM1A) | _BV(COM1A1) | _BV(CS10);
 
+    // Load configuration from EEPROM and validate it
     loadRates();
+    validateRates();
 
 #ifdef BATTERY_SCALE
     batteryVoltage = measureBattery();
@@ -227,7 +232,7 @@ int main(void) {
 
     // Main loop. The first thing that we do is turn off peripherals that we don't need,
     // then we go to sleep. When woken up, run a quick debounce routine to determine if we
-    // should go into LED display mode, at at the completion go back to sleep.
+    // should go into LED display mode, and at the completion go back to sleep.
     for(;;){
 
         // Disable the IR timer
@@ -253,17 +258,39 @@ int main(void) {
         DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
         PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
 
+#ifdef TIMING_CHECK
+        bitSet(DDRB, PIN_UNUSED);
+        bitClear(PORTB, PIN_UNUSED);
+#endif
+
         // First play the heartbeat pattern back
+#ifdef TIMING_CHECK
+        bitSet(PORTB, PIN_UNUSED);
+#endif
         playEKG();
+#ifdef TIMING_CHECK
+        bitClear(PORTB, PIN_UNUSED);
+#endif
 
 #ifdef BATTERY_SCALE
         // Next, measure the battery voltage while it is depleted
         batteryVoltage = measureBattery();
+                bitSet(DDRB, PIN_UNUSED);
+                pulseOut(0x12);
+                pulseOut(0x34);
+                pulseOut(batteryVoltage);
+                bitClear(DDRB, PIN_UNUSED);
 #endif
 
         // Finally, monitor the IR input
+#ifdef TIMING_CHECK
+        bitSet(PORTB, PIN_UNUSED);
+#endif
         monitorIR();
 
+#ifdef TIMING_CHECK
+        bitClear(PORTB, PIN_UNUSED);
+#endif
     }
     
     return 0;   /* never reached */

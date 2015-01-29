@@ -35,7 +35,7 @@ OBJECTS := $(CPP_FILES:.cpp=.o) $(C_FILES:.c=.o)
 all:	$(TARGET).hex
 
 flash:	all
-	$(AVRDUDE) -b 3 -U flash:w:$(TARGET).hex:i
+	$(AVRDUDE) -b 1 -U flash:w:$(TARGET).hex:i
 
 fuse:
 	$(AVRDUDE) -B 200 $(FUSES)

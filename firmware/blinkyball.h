@@ -9,8 +9,6 @@
 
 #define PIN_UNUSED      PB0     // Unused pin; should configure as pull-up
 
-
-
 // System parameters
 #define IR_MONITOR_TIME         30  // Amount of time to stay awake for IR reception, in 10ths of a second
 
@@ -30,7 +28,9 @@
 #define  MAGIC_HEADER_VALUE     0xDE
 
 // If defined, scale the LED output based on battery voltage
-#define BATTERY_SCALE
+//#define BATTERY_SCALE
+//#define SERIAL_DEBUG
+#define TIMING_CHECK
 
 #define MIN_VOLTAGE 180 // Minimum voltage to scale battery from (don't touch this)
 
