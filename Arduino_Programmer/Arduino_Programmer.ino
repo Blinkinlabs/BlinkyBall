@@ -12,9 +12,9 @@
 const uint8_t PIN_IR_OUT = 3;
 const uint8_t PIN_IR_GND = 4;
 
-const uint8_t DEFAULT_SENSITIVITY = 10;
-const uint8_t DEFAULT_COUNTS = 1;
-const uint8_t DEFAULT_BPM = 200;
+const uint8_t DEFAULT_SENSITIVITY = 0;
+const uint8_t DEFAULT_COUNTS = 255;
+const uint8_t DEFAULT_BPM = 40;
 
 IRsend irsend;
 
@@ -50,7 +50,6 @@ void sendHeartbeatParameters(uint8_t bpm, uint8_t counts, uint8_t sensitivity) {
 }
 
 void loop() {
-  
   sendHeartbeatParameters(DEFAULT_BPM, DEFAULT_COUNTS, DEFAULT_SENSITIVITY);
   delay(500);
 }

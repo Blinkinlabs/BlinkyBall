@@ -11,8 +11,9 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
-#include <util/delay.h>
 #include <avr/eeprom.h>
+#include <avr/wdt.h>
+#include <util/delay.h>
 #include "IRremote.h"
 #include "blinkyball.h"
 #include "crc.h"
@@ -127,6 +128,9 @@ void playEKG() {
             for(uint16_t count = 0; count < heartbeatSpeed; count++) {
                 _delay_us(100);
             }
+
+            // And hit the watchdog
+            wdt_reset();
         }
     }
 
@@ -140,7 +144,10 @@ void monitorIR() {
     enableIRIn(); // Start the receiver
     
     for(uint32_t irLoop = 0; irLoop < IR_MONITOR_TIME; irLoop++) {
+    
         _delay_ms(60);  // Derate this to handle processing time of decodeIR() @4MHz
+
+        wdt_reset(); // Hit the watchdog
 
         // If we didn't get an NEC command, bail
         if (!decodeIR()) {
@@ -184,9 +191,15 @@ void monitorIR() {
 
 // program entry point
 // Kinda sad that the production devices will only run this once T_T
+// Unless they brown out and somehow restart O_O
 int main(void) {
+    cli();
+    MCUSR &= ~_BV(WDRF); // Clear the watchdog reset flag
+    wdt_enable(WDTO_2S);
+    wdt_reset();
+    sei();
 
-    // Change the clock to 8MHz
+    // Change the clock to 4MHz
     __asm__ volatile (
         "st Z,%1" "\n\t"
         "st Z,%2"
@@ -195,6 +208,12 @@ int main(void) {
         "r" ((uint8_t) (1<<CLKPCE)),
         "r" ((uint8_t) 1)  // new CLKPR value 0=8MHz, 1=4MHz, 2=2MHz, 3=1MHz)
     );
+
+    bitSet(DDRB,    PIN_LED_ON);
+    bitSet(PORTB,   PIN_LED_ON);
+    _delay_us(20);
+    bitClear(PORTB, PIN_LED_ON);
+    _delay_us(20);
 
     bitSet(ACSR, ACD);          // Disable the analog comparitor
     bitClear(ADCSRA, ADEN);     // Disable the ADC
@@ -233,8 +252,14 @@ int main(void) {
         DDRB = 0;
         PORTB = _BV(PIN_UNUSED);
 
+        // Disable the watchdog
+        wdt_disable();
+
         // Go to sleep
         sleep();
+
+        // Re-enable the watchdog
+        wdt_enable(WDTO_2S);
 
         // Do a quick debounce check, to discard small shakes
         if(interruptCount < debounceCount) {
@@ -245,29 +270,10 @@ int main(void) {
         DDRB = _BV(PIN_LED_ON) | _BV(PIN_IR_POWER);
         PORTB = _BV(PIN_UNUSED) | _BV(PIN_IR_POWER);
 
-#ifdef TIMING_CHECK
-        bitSet(DDRB, PIN_UNUSED);
-        bitClear(PORTB, PIN_UNUSED);
-#endif
-
         // First play the heartbeat pattern back
-#ifdef TIMING_CHECK
-        bitSet(PORTB, PIN_UNUSED);
-#endif
         playEKG();
-#ifdef TIMING_CHECK
-        bitClear(PORTB, PIN_UNUSED);
-#endif
-
         // Finally, monitor the IR input
-#ifdef TIMING_CHECK
-        bitSet(PORTB, PIN_UNUSED);
-#endif
         monitorIR();
-
-#ifdef TIMING_CHECK
-        bitClear(PORTB, PIN_UNUSED);
-#endif
     }
     
     return 0;   /* never reached */
