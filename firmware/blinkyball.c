@@ -1,8 +1,9 @@
 #include "blinkyball.h"
 
-#if 0
+#ifdef SERIAL_DEBUG
+// Bitbang a 9600 baud serial output
 void pulseOut(uint8_t data) {
-    const uint8_t BIT_DELAY = 104; // ~9600 baud
+    const uint8_t BIT_DELAY = 100; // ~9600 baud
 
     // start bit
     bitClear(PORTB, PIN_UNUSED);
@@ -26,10 +27,13 @@ void pulseOut(uint8_t data) {
 }
 #endif
 
-#if 0
+#ifdef BATTERY_SCALE
 // Meausre the battery voltage under load
 // @return Battery voltage, in counts (255=5V, 127=2.5V, etc)
 uint8_t measureBattery() {
+    // Enable the clock to the ADC
+    bitClear(PRR, ADC);
+
     // Select Vcc as voltage reference, Vbg as input, and left-justify result
     ADMUX = _BV(ADLAR) | _BV(MUX3) | _BV(MUX2);
 
@@ -56,6 +60,9 @@ uint8_t measureBattery() {
 
     // Disable ADC
     ADCSRA = 0;
+
+    // Disable the clock to the ADC
+    bitSet(PRR, ADC);
 
     // The measured value is equal to:
     // measured = Vbg/Vcc*counts

@@ -17,9 +17,7 @@
 #include "blinkyball.h"
 #include "crc.h"
 
-//#include "seven_cycles_corrected.h"
-#include "seven_cycles.h"
-
+#include "seven_cycles_corrected.h"
 
 // Bounce sensitivity, in interrupt counts. Increase to decrease sensitivity
 volatile uint8_t debounceCount;
@@ -39,6 +37,12 @@ volatile uint8_t repeatCount;
 
 // Counter for interrupt-based debounce routine
 volatile uint8_t interruptCount;
+
+#ifdef BATTERY_SCALE
+// Battery voltage measurement, in counts (255=5V)
+// If this is greater than 170, we will scale the brightness down to save power.
+volatile uint8_t batteryVoltage;
+#endif
 
 // IR Receiver 
 extern decode_results_t results;
@@ -100,9 +104,33 @@ inline void loadRates() {
 // Play back one loop of the heartbeat signal
 // Duration: nominal 7 seconds at 60 BPM
 void playEKG() {
+    uint8_t sample;
+
     for(uint16_t loop = 0; loop < repeatCount; loop++) {
         for(uint16_t position = 0; position < EKG_DATA_LENGTH; position++) {
-            setLEDs(pgm_read_byte(&ekgData[position]));
+            sample = pgm_read_byte(&ekgData[position]);
+
+#ifdef BATTERY_SCALE
+            // If the battery voltage is high, scale back the PWM so we save power.
+
+            if(batteryVoltage > MIN_VOLTAGE) {
+                // Scaling function designed in grapher.
+                int16_t interm = (sample - 275) * 20 / 6;
+                sample = (uint8_t)((interm*interm)/400);
+            };
+
+#ifdef SERIAL_DEBUG
+if(position == 0) {
+            bitSet(DDRB, PIN_UNUSED);
+            pulseOut(0x12);
+            pulseOut(batteryVoltage);
+            pulseOut(sample);
+            bitClear(DDRB, PIN_UNUSED);
+}
+#endif
+#endif
+
+            setLEDs(sample);
 
             // make a delay
             for(uint16_t count = 0; count < heartbeatSpeed; count++) {
@@ -193,10 +221,15 @@ int main(void) {
 
     loadRates();
 
+#ifdef BATTERY_SCALE
+    batteryVoltage = measureBattery();
+#endif
+
     // Main loop. The first thing that we do is turn off peripherals that we don't need,
     // then we go to sleep. When woken up, run a quick debounce routine to determine if we
     // should go into LED display mode, at at the completion go back to sleep.
     for(;;){
+
         // Disable the IR timer
         disableIRIn();
 
@@ -223,7 +256,12 @@ int main(void) {
         // First play the heartbeat pattern back
         playEKG();
 
-        // Next, monitor the IR input
+#ifdef BATTERY_SCALE
+        // Next, measure the battery voltage while it is depleted
+        batteryVoltage = measureBattery();
+#endif
+
+        // Finally, monitor the IR input
         monitorIR();
 
     }
