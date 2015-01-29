@@ -12,8 +12,11 @@ print "#define EKG_DATA_LENGTH %i"%(len(data))
 print "const uint8_t ekgData[EKG_DATA_LENGTH] PROGMEM = {"
 
 i = 0
-for row in data:
-    print "%3i,"%(row),
+for value in data:
+    # Do a simple square brightness correction on the data
+    value = pow(value/255.0, 2)*255
+
+    print "%3i,"%(value),
     i += 1
     if i > 9:
         print ""

@@ -9,24 +9,31 @@
 #include <IRremote.h>
 #include "crc.h"
 
+const uint8_t PIN_IR_OUT = 3;
+const uint8_t PIN_IR_GND = 4;
+
 const uint8_t DEFAULT_SENSITIVITY = 255;
 const uint8_t DEFAULT_COUNTS = 10;
+const uint8_t DEFAULT_BPM = 60;
 
 IRsend irsend;
 
 void setup()
 {
   Serial.begin(9600);
+  
+  pinMode(PIN_IR_GND, OUTPUT);
+  digitalWrite(PIN_IR_GND, LOW);
 }
 
 // Update the orb heartbeat
-// @param rate: New heartbeat rate, in BPM
+// @param bpm: New heartbeat rate, in BPM
 // @param counts: Number of times the heartbeat should be repeated when the orb is activated
 // @param sensitivity: Sensitivity
-void sendHeartbeatParameters(uint8_t rate, uint8_t counts, uint8_t sensitivity) {
+void sendHeartbeatParameters(uint8_t bpm, uint8_t counts, uint8_t sensitivity) {
   
-  // Convert the heart rate from BPM to the system value
-  rate = uint8_t(100000*60.0/bpm/500);
+  // Convert the heart rate from BPM to tenths-of-a-millisecond/sample
+  uint8_t rate = uint8_t(10000*60.0/bpm/497*7);
   
   resetCRC();
   updateCRC(rate);
@@ -44,6 +51,6 @@ void sendHeartbeatParameters(uint8_t rate, uint8_t counts, uint8_t sensitivity) 
 
 void loop() {
   
-  sendHeartbeatParameters(60, DEFAULT_COUNTS, DEFAULT_SENSITIVITY);
-  delay(150);
+  sendHeartbeatParameters(DEFAULT_BPM, DEFAULT_COUNTS, DEFAULT_SENSITIVITY);
+  delay(1000);
 }

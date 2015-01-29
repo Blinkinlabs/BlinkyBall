@@ -17,6 +17,7 @@
 #include "blinkyball.h"
 #include "crc.h"
 
+//#include "seven_cycles_corrected.h"
 #include "seven_cycles.h"
 
 
@@ -25,8 +26,9 @@ volatile uint8_t debounceCount;
 
 // Heartbeat speed, in 10ths of a millisecond per sample
 // To convert from BPM to this constant, use the following formula:
-// ((60/BPM/SAMPLES)) × 10000
-// where SAMPLES is equal to the heartbeat sample count (500)
+// ((60/BPM/SAMPLES*7)) × 10000
+// or : 8458/bpm
+// where SAMPLES is equal to the heartbeat sample count for seven cycles (497)
 // Examples:
 // 60bpm: 140
 // 150bpm: 56
@@ -68,7 +70,11 @@ ISR(INT0_vect) {
 
 
 // Store the configuration rates in EEPROM
-inline void saveRates() {
+inline void validateSaveRates() {
+    if(repeatCount > REPEAT_COUNT_MAXIMUM) {
+        repeatCount = REPEAT_COUNT_MAXIMUM;
+    }
+
     eeprom_write_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS,   DEBOUNCE_COUNT_DEFAULT);
     eeprom_write_byte((uint8_t*)REPEAT_COUNT_ADDRESS,     REPEAT_COUNT_DEFAULT);
     eeprom_write_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS,  HEARTBEAT_SPEED_DEFAULT);
@@ -83,22 +89,18 @@ inline void loadRates() {
         debounceCount  = DEBOUNCE_COUNT_DEFAULT;
         repeatCount    = REPEAT_COUNT_DEFAULT;
         heartbeatSpeed = HEARTBEAT_SPEED_DEFAULT;
-        saveRates();
+        validateSaveRates();
     }
 
-    debounceCount  =  eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
-    repeatCount    =  eeprom_read_byte((uint8_t*)REPEAT_COUNT_ADDRESS);
+    debounceCount  = eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
+    repeatCount    = eeprom_read_byte((uint8_t*)REPEAT_COUNT_ADDRESS);
     heartbeatSpeed = eeprom_read_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS);
 }
 
 // Play back one loop of the heartbeat signal
 // Duration: nominal 7 seconds at 60 BPM
 void playEKG() {
-    if(repeatCount > 10) {
-        repeatCount = 10;
-    }
-
-    for(uint8_t loop = 0; loop < repeatCount; loop++) {
+    for(uint16_t loop = 0; loop < repeatCount; loop++) {
         for(uint16_t position = 0; position < EKG_DATA_LENGTH; position++) {
             setLEDs(pgm_read_byte(&ekgData[position]));
 
@@ -139,13 +141,14 @@ void monitorIR() {
             heartbeatSpeed = speed;
             repeatCount = repeats;
             debounceCount = sensitivity;
-            saveRates();
+            validateSaveRates();
 
             // Flash the LEDs to indicate IR reception
             for(uint8_t i = 0; i < 5; i++) {
-                setLEDs(i%2==0?30:0);
-                _delay_ms(10);
+                setLEDs(i%2==0?20:0);
+                _delay_ms(2);
             }
+            setLEDs(0);
 
             // And reset our timeout counter
             irLoop = 0; 
