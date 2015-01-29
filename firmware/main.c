@@ -69,6 +69,23 @@ inline void validateRates() {
     if(repeatCount > REPEAT_COUNT_MAXIMUM) {
         repeatCount = REPEAT_COUNT_MAXIMUM;
     }
+    if(repeatCount < REPEAT_COUNT_MINIMUM) {
+        repeatCount = REPEAT_COUNT_MINIMUM;
+    }
+
+    if(debounceCount > DEBOUNCE_COUNT_MAXIMUM) {
+        debounceCount = DEBOUNCE_COUNT_MAXIMUM;
+    }
+    if(debounceCount < DEBOUNCE_COUNT_MINIMUM) {
+        debounceCount = DEBOUNCE_COUNT_MINIMUM;
+    }
+
+    if(heartbeatSpeed > HEARTBEAT_SPEED_MAXIMUM) {
+        heartbeatSpeed = HEARTBEAT_SPEED_MAXIMUM;
+    }
+    if(heartbeatSpeed < HEARTBEAT_SPEED_MINIMUM) {
+        heartbeatSpeed = HEARTBEAT_SPEED_MINIMUM;
+    }
 }
 
 // Store the configuration rates in EEPROM

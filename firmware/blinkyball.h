@@ -12,11 +12,17 @@
 // System parameters
 #define IR_MONITOR_TIME         20  // Amount of time to stay awake for IR reception, in 10ths of a second
 
-#define DEBOUNCE_COUNT_DEFAULT   15 // Wakeup sensitivity, in counts (higher is less sensitive)
+#define DEBOUNCE_COUNT_DEFAULT   20 // Wakeup sensitivity, in counts (higher is less sensitive)
 #define REPEAT_COUNT_DEFAULT      1 // Repeat count in 7-pulse units
 #define HEARTBEAT_SPEED_DEFAULT 140 // Heartbeat speed in units
 
 #define REPEAT_COUNT_MAXIMUM      4 // Maximum repeat counts
+#define REPEAT_COUNT_MINIMUM      1 // Minimum repeat counts
+#define DEBOUNCE_COUNT_MAXIMUM  120 // Maximum debounce count
+#define DEBOUNCE_COUNT_MINIMUM   15 // Minimum debounce count
+#define HEARTBEAT_SPEED_MINIMUM  50 // Mimimum heartbeat speed, 170 BPM
+#define HEARTBEAT_SPEED_MAXIMUM 240 // Mimimum heartbeat speed, 35 BPM
+
 
 // EEPROM data addresses
 #define MAGIC_HEADER_ADDRESS    0
@@ -28,7 +34,6 @@
 #define  MAGIC_HEADER_VALUE     0xDE
 
 //#define SERIAL_DEBUG
-#define TIMING_CHECK
 
 #define bitSet(reg, bit) reg |= (1<<bit)
 #define bitClear(reg, bit) reg &= ~(1<<bit)
