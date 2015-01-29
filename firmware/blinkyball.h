@@ -12,13 +12,15 @@
 // System parameters
 #define IR_MONITOR_TIME         30  // Amount of time to stay awake for IR reception, in 10ths of a second
 
-#define DEBOUNCE_COUNT_DEFAULT  15  // Wakeup sensitivity, in counts (higher is less sensitive)
-#define HEARTBEAT_SPEED_DEFAULT 140 // Heartbeat speed in 
+#define DEBOUNCE_COUNT_DEFAULT   15 // Wakeup sensitivity, in counts (higher is less sensitive)
+#define REPEAT_COUNT_DEFAULT      2 // Repeat count in 7-pulse units
+#define HEARTBEAT_SPEED_DEFAULT 140 // Heartbeat speed in units
 
 // EEPROM data addresses
 #define MAGIC_HEADER_ADDRESS    0
 #define DEBOUNCE_COUNT_ADDRESS  1
-#define HEARTBEAT_SPEED_ADDRESS 2
+#define REPEAT_COUNT_ADDRESS    2
+#define HEARTBEAT_SPEED_ADDRESS 3
 
 // Magic header to determine if the EEPROM was written properly
 #define  MAGIC_HEADER_VALUE     0xDE

@@ -32,6 +32,9 @@ volatile uint8_t debounceCount;
 // 150bpm: 56
 volatile uint8_t heartbeatSpeed;
 
+// Number of times the 7-beat pattern is repeated
+volatile uint8_t repeatCount;
+
 // Counter for interrupt-based debounce routine
 volatile uint8_t interruptCount;
 
@@ -67,6 +70,7 @@ ISR(INT0_vect) {
 // Store the configuration rates in EEPROM
 inline void saveRates() {
     eeprom_write_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS,   DEBOUNCE_COUNT_DEFAULT);
+    eeprom_write_byte((uint8_t*)REPEAT_COUNT_ADDRESS,     REPEAT_COUNT_DEFAULT);
     eeprom_write_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS,  HEARTBEAT_SPEED_DEFAULT);
     eeprom_write_byte((uint8_t*)MAGIC_HEADER_ADDRESS,     MAGIC_HEADER_VALUE);
 }
@@ -76,24 +80,32 @@ inline void saveRates() {
 inline void loadRates() {
     // If the EEPROM wasn't initialized, do so now
     if(eeprom_read_byte((uint8_t*)MAGIC_HEADER_ADDRESS) != MAGIC_HEADER_VALUE) {
-        debounceCount = DEBOUNCE_COUNT_DEFAULT;
+        debounceCount  = DEBOUNCE_COUNT_DEFAULT;
+        repeatCount    = REPEAT_COUNT_DEFAULT;
         heartbeatSpeed = HEARTBEAT_SPEED_DEFAULT;
         saveRates();
     }
 
-    debounceCount =  eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
+    debounceCount  =  eeprom_read_byte((uint8_t*)DEBOUNCE_COUNT_ADDRESS);
+    repeatCount    =  eeprom_read_byte((uint8_t*)REPEAT_COUNT_ADDRESS);
     heartbeatSpeed = eeprom_read_byte((uint8_t*)HEARTBEAT_SPEED_ADDRESS);
 }
 
 // Play back one loop of the heartbeat signal
 // Duration: nominal 7 seconds at 60 BPM
 void playEKG() {
-    for(uint16_t position = 0; position < EKG_DATA_LENGTH; position++) {
-        setLEDs(pgm_read_byte(&ekgData[position]));
+    if(repeatCount > 10) {
+        repeatCount = 10;
+    }
 
-        // make a delay
-        for(uint8_t count = 0; count < heartbeatSpeed; count++) {
-            _delay_us(100);
+    for(uint8_t loop = 0; loop < repeatCount; loop++) {
+        for(uint16_t position = 0; position < EKG_DATA_LENGTH; position++) {
+            setLEDs(pgm_read_byte(&ekgData[position]));
+
+            // make a delay
+            for(uint16_t count = 0; count < heartbeatSpeed; count++) {
+                _delay_us(100);
+            }
         }
     }
 }
@@ -107,36 +119,40 @@ void monitorIR() {
     for(uint32_t irLoop = 0; irLoop < IR_MONITOR_TIME; irLoop++) {
         _delay_ms(100);
 
-        if (decodeIR()) {
-            if(results.bits == 32) {
-                uint8_t speed =         (results.value >> 24) & 0xFF;
-                uint8_t unused =        (results.value >> 16) & 0xFF;
-                uint8_t sensitivity =   (results.value >>  8) & 0xFF;
+        // If we didn't get an NEC command, bail
+        if (!decodeIR()) {
+            continue;
+        }
 
-                resetCRC();
-                updateCRC(speed);
-                updateCRC(unused);
-                updateCRC(sensitivity);
+        uint8_t speed =         (results.value >> 24) & 0xFF;
+        uint8_t repeats =       (results.value >> 16) & 0xFF;
+        uint8_t sensitivity =   (results.value >>  8) & 0xFF;
 
-                // If the CRC is valid, store the results.
-                if(getCRC() == (results.value & 0xFF)) {
-                    heartbeatSpeed = speed;
-                    debounceCount = sensitivity;
-                    saveRates();
+        resetCRC();
+        updateCRC(speed);
+        updateCRC(repeats);
+        updateCRC(sensitivity);
 
-                    // Flash the LEDs to indicate IR reception
-                    for(uint8_t i = 0; i < 50; i++) {
-                        setLEDs(i%2==0?60:0);
-                        _delay_ms(10);
-                    }
+        // If the CRC is valid, store the results.
+        if(getCRC() == (results.value & 0xFF)) {
+            // Update the rates both in working memory and in the EEPROM
+            heartbeatSpeed = speed;
+            repeatCount = repeats;
+            debounceCount = sensitivity;
+            saveRates();
 
-                    // And reset our timeout counter
-                    irLoop = 0; 
-                }
+            // Flash the LEDs to indicate IR reception
+            for(uint8_t i = 0; i < 5; i++) {
+                setLEDs(i%2==0?30:0);
+                _delay_ms(10);
             }
 
-            resumeIR(); // Receive the next value
+            // And reset our timeout counter
+            irLoop = 0; 
         }
+        
+        resumeIR(); // Receive the next value
+        
     }
 }
 
