@@ -37,15 +37,8 @@ volatile uint8_t repeatCount;
 // Counter for interrupt-based debounce routine
 volatile uint8_t interruptCount;
 
-#ifdef BATTERY_SCALE
-// Battery voltage measurement, in counts (255=5V)
-// If this is greater than 170, we will scale the brightness down to save power.
-volatile uint8_t batteryVoltage;
-#endif
-
 // IR Receiver 
 extern decode_results_t results;
-
 
 void sleep()
 {
@@ -111,28 +104,9 @@ void playEKG() {
         for(uint16_t position = 0; position < EKG_DATA_LENGTH; position++) {
             sample = pgm_read_byte(&ekgData[position]);
 
-#ifdef BATTERY_SCALE
-            // If the battery voltage is high, scale back the PWM so we save power.
-            if(batteryVoltage > MIN_VOLTAGE) {
-                // Scaling function designed in grapher.
-                int16_t interm = (batteryVoltage - 275) * 20 / 6;
-                sample = (uint8_t)((((interm*interm)/400)*sample)/255);
-            };
-
-#ifdef SERIAL_DEBUG
-            if(position == 0) {
-                bitSet(DDRB, PIN_UNUSED);
-                pulseOut(0x12);
-                pulseOut(batteryVoltage);
-                pulseOut(sample);
-                bitClear(DDRB, PIN_UNUSED);
-            }
-#endif // SERIAL_DEBUG
-#endif // BATTERY_SCALE
-
             setLEDs(sample);
 
-            // make a delay
+            // make a delay based on the heartbeat speed
             for(uint16_t count = 0; count < heartbeatSpeed; count++) {
                 _delay_us(100);
             }
@@ -226,10 +200,6 @@ int main(void) {
     loadRates();
     validateRates();
 
-#ifdef BATTERY_SCALE
-    batteryVoltage = measureBattery();
-#endif
-
     // Main loop. The first thing that we do is turn off peripherals that we don't need,
     // then we go to sleep. When woken up, run a quick debounce routine to determine if we
     // should go into LED display mode, and at the completion go back to sleep.
@@ -270,16 +240,6 @@ int main(void) {
         playEKG();
 #ifdef TIMING_CHECK
         bitClear(PORTB, PIN_UNUSED);
-#endif
-
-#ifdef BATTERY_SCALE
-        // Next, measure the battery voltage while it is depleted
-        batteryVoltage = measureBattery();
-                bitSet(DDRB, PIN_UNUSED);
-                pulseOut(0x12);
-                pulseOut(0x34);
-                pulseOut(batteryVoltage);
-                bitClear(DDRB, PIN_UNUSED);
 #endif
 
         // Finally, monitor the IR input

@@ -27,13 +27,8 @@
 // Magic header to determine if the EEPROM was written properly
 #define  MAGIC_HEADER_VALUE     0xDE
 
-// If defined, scale the LED output based on battery voltage
-//#define BATTERY_SCALE
 //#define SERIAL_DEBUG
 #define TIMING_CHECK
-
-#define MIN_VOLTAGE 180 // Minimum voltage to scale battery from (don't touch this)
-
 
 #define bitSet(reg, bit) reg |= (1<<bit)
 #define bitClear(reg, bit) reg &= ~(1<<bit)
