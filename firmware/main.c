@@ -123,7 +123,7 @@ void monitorIR() {
     enableIRIn(); // Start the receiver
     
     for(uint32_t irLoop = 0; irLoop < IR_MONITOR_TIME; irLoop++) {
-        _delay_ms(90);
+        _delay_ms(60);  // Derate this to handle processing time of decodeIR() @4MHz
 
         // If we didn't get an NEC command, bail
         if (!decodeIR()) {

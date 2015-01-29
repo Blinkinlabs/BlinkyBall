@@ -10,7 +10,7 @@
 #define PIN_UNUSED      PB0     // Unused pin; should configure as pull-up
 
 // System parameters
-#define IR_MONITOR_TIME         30  // Amount of time to stay awake for IR reception, in 10ths of a second
+#define IR_MONITOR_TIME         20  // Amount of time to stay awake for IR reception, in 10ths of a second
 
 #define DEBOUNCE_COUNT_DEFAULT   15 // Wakeup sensitivity, in counts (higher is less sensitive)
 #define REPEAT_COUNT_DEFAULT      1 // Repeat count in 7-pulse units
