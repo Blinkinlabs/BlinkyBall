@@ -1,0 +1,20 @@
+#! /bin/sh
+# /etc/init.d/blinkyball-programmer
+
+touch /var/lock/blinkyball-programmer
+
+case "$1" in
+  start)
+    echo "starting programmer script"
+    python /home/pi/BlinkyBall/programmer/blinkyball_programmer.py
+    ;;
+  stop)
+    echo "eh, don't know how"
+    ;;
+  *)
+    echo "Usage: /etc/init.d/blinkyball-programmer {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
