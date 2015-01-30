@@ -6,7 +6,10 @@
 DEVICE     = attiny85           # See avr-help for all possible devices
 CLOCK      = 4000000            # Clock speed
 PROGRAMMER = -c usbtiny -P usb # For using Adafruit USBtiny
-FUSES      = -U lfuse:w:0x62:m -U hfuse:w:0xdF:m -U efuse:w:0xff:m  # settings as taken from http://www.engbedded.com/fusecalc/
+LFUSE      = 0x62
+HFUSE      = 0xDF
+EFUSE      = 0xFF
+FUSES      = -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m -U efuse:w:$(EFUSE):m  # settings as taken from http://www.engbedded.com/fusecalc/
 
 TARGET = blinkyball
 
@@ -34,13 +37,17 @@ OBJECTS := $(CPP_FILES:.cpp=.o) $(C_FILES:.c=.o)
 # symbolic targets:
 all:	$(TARGET).hex
 
+verify-program:
+	$(AVRDUDE) -b 1 -U flash:v:$(TARGET).hex:i -U lfuse:v:$(LFUSE):m -U hfuse:v:$(HFUSE):m -U efuse:v:$(EFUSE):m
+
 flash:	all
 	$(AVRDUDE) -b 1 -U flash:w:$(TARGET).hex:i
 
 fuse:
-	$(AVRDUDE) -B 200 $(FUSES)
+	$(AVRDUDE) -b 200 -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m -U efuse:w:$(EFUSE):m
 
 install: fuse flash
+
 
 # if you use a bootloader, change the command below appropriately:
 load: all

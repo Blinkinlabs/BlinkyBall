@@ -9,12 +9,13 @@
 #include <IRremote.h>
 #include "crc.h"
 
+const uint8_t PIN_LED_OUT = 13;
 const uint8_t PIN_IR_OUT = 3;
 const uint8_t PIN_IR_GND = 4;
 
-const uint8_t DEFAULT_SENSITIVITY = 0;
-const uint8_t DEFAULT_COUNTS = 255;
-const uint8_t DEFAULT_BPM = 40;
+const uint8_t DEFAULT_SENSITIVITY = 100;
+const uint8_t DEFAULT_COUNTS = 1;
+const uint8_t DEFAULT_BPM = 60;
 
 IRsend irsend;
 
@@ -22,6 +23,7 @@ void setup()
 {
   Serial.begin(9600);
   
+  pinMode(PIN_LED_OUT, OUTPUT);
   pinMode(PIN_IR_GND, OUTPUT);
   digitalWrite(PIN_IR_GND, LOW);
 }
@@ -51,5 +53,9 @@ void sendHeartbeatParameters(uint8_t bpm, uint8_t counts, uint8_t sensitivity) {
 
 void loop() {
   sendHeartbeatParameters(DEFAULT_BPM, DEFAULT_COUNTS, DEFAULT_SENSITIVITY);
-  delay(500);
+  
+  digitalWrite(PIN_LED_OUT, HIGH);
+  delay(250);
+  digitalWrite(PIN_LED_OUT, LOW);
+  delay(250);
 }
