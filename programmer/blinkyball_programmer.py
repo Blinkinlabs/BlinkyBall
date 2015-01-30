@@ -10,7 +10,7 @@ def programFuses():
     return result[0] == 0
 
 def loadFlash():
-    result = IcspUtils.loadFlash("/home/pi/BlinkyBall/bin/blinkyball-0.9.hex")
+    result = IcspUtils.loadFlash("/home/pi/BlinkyBall/bin/blinkyball-1.0.hex")
     return result[0] == 0
 
 
