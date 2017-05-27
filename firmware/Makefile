@@ -25,7 +25,7 @@ AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
 
 C_FILES = \
 	main.c \
-	IRremote.c \
+	irremote.c \
         crc.c \
         blinkyball.c
 

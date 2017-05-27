@@ -14,7 +14,7 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 #include <util/delay.h>
-#include "IRremote.h"
+#include "irremote.h"
 #include "blinkyball.h"
 #include "crc.h"
 #include "seven_cycles_corrected.h"

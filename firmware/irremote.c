@@ -20,8 +20,8 @@
  * LG added by Darryl Smith (based on the JVC protocol)
  */
 
-#include "IRremote.h"
-#include "IRremoteInt.h"
+#include "irremote.h"
+#include "irremoteint.h"
 
 // Provides ISR
 #include <avr/interrupt.h>
