@@ -1,4 +1,9 @@
 # Circuit and code for a heartbeat bouncy ball
+![image](https://github.com/Blinkinlabs/BlinkyBall/raw/master/documentation/blinkyball.jpg)
+
+## License
+
+This design, including the software and hardware, is licensed under the MIT license.
 
 ## PCB Design
 
